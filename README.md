@@ -41,13 +41,6 @@ Advanced Settings
 
 ![](https://cloudup.com/csJdSV841Lh+)
 
-Configuring Social Login
-
-![](https://raw.githubusercontent.com/auth0/wp-auth0/master/screenshot-4.png)
-
-Configuring Enterprise Login
-
-![](https://raw.githubusercontent.com/auth0/wp-auth0/master/screenshot-6.png)
 
 ## Issue Reporting
 
