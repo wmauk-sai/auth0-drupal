@@ -91,7 +91,7 @@ function auth0_user_info_page($user) {
       return '<pre>' . json_encode($object, JSON_PRETTY_PRINT) . '</pre>';
     }
     else {
-      return '<pre>' . print_r($object, true) . '</pre>';
+      return '<pre>' . print_r($object, TRUE) . '</pre>';
     }
   }
   else {
@@ -125,7 +125,7 @@ function auth0_verify_email_page() {
       drupal_set_message(t('Sorry, we could not send a verification e-mail. Please try again later.'), 'error');
     }
   }
-  catch(Exception$e) {
+  catch (Exception $e) {
     drupal_set_message(t('Sorry, we could not send a verification e-mail. Please try again later.'), 'error');
   }
 
@@ -157,7 +157,9 @@ function auth0_callback() {
     $user_info = $auth0->getUserInfo();
     $id_token = $auth0->getIdToken();
   }
-  catch(Exception$e) {}
+  catch (Exception $e) {
+    watchdog('Auth0', 'Error occurred while getting the Auth0 user info or ID token: @exception', array('@exception' => print_r($e, TRUE)), WATCHDOG_ERROR);
+  }
 
   // var_dump($auth0); die;
 
@@ -356,7 +358,7 @@ function auth0_create_user_from_auth0($user_info) {
   $new_user = user_save($user);
 
   if ($user) {
-    watchdog('Auth0', 'Account created for %name', array('%name' => $user->name), WATCHDOG_NOTICE, l(t('edit'), 'user/'. $user->uid .'/edit'));
+    watchdog('Auth0', 'Account created for %name', array('%name' => $user->name), WATCHDOG_NOTICE, l(t('edit'), 'user/' . $user->uid . '/edit'));
   }
 
   // Notify the user if they must have approval.
