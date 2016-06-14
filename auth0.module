@@ -424,6 +424,13 @@ function auth0_advanced_settings_form($form, &$form_state) {
     auth0_missing_dependencies_message();
   }
 
+  $form['auth0_replace_forms'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Replace default Drupal login, registration, and password reset forms'),
+    '#default_value' => variable_get('auth0_replace_forms', TRUE),
+    '#description' => t('Uncheck this box to disable replacement of the default Drupal login, registration, and password reset forms with the Auth0 Lock login widget. This allows maintaining the option to login with a Drupal username and password.'),
+  );
+
   // Text field for the e-mail subject.
   $form['auth0_form_title'] = array(
     '#type' => 'textfield',
@@ -493,6 +500,11 @@ function auth0_user_logout($account) {
  * Replace the user login forms with the Auth0 login widget.
  */
 function auth0_form_alter(&$form, $form_state, $form_id) {
+  // If replacing the forms is disabled, then skip making alterations.
+  if (!variable_get('auth0_replace_forms', TRUE)) {
+    return;
+  }
+
   if (($form_id == 'user_login_block' || $form_id == 'user_login') && auth0_enabled('login')) {
     _auth0_form_replace_with_lock($form, 'signin');
   }
