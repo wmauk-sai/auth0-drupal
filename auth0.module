@@ -678,3 +678,41 @@ function auth0_missing_dependencies_message() {
     'warning'
   );
 }
+
+/**
+ * Implements hook_block_info().
+ *
+ * Define a block with the Auth0 Lock widget.
+ */
+function auth0_block_info() {
+  $blocks['auth0_lock'] = array(
+    'info' => t('Auth0 Lock widget'),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ *
+ * Provide output for the Auth0 Lock block.
+ */
+function auth0_block_view($delta = '') {
+  global $user;
+
+  $block = array();
+
+  switch ($delta) {
+    case 'auth0_lock':
+      if (!$user->uid) {
+        $block['subject'] = '';
+        $block['content'] = array(
+          '#type' => 'markup',
+          '#markup' => theme('auth0_lock', array('mode' => 'signin')),
+        );
+      }
+      break;
+  }
+
+  return $block;
+}
