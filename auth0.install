@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Installation file for the auth0 module.
+ */
+
+/**
  * Implements hook_schema().
  */
 function auth0_schema() {
