@@ -304,9 +304,12 @@ function auth0_find_auth0_user($id) {
  */
 function auth0_get_auth0_object_from_drupal_uid($uid) {
   $rs = db_select('auth0_user', 'a')->fields('a')->condition('drupal_id', $uid, '=')->execute()->fetch();
-  $rs = drupal_unpack($rs, 'auth0_object');
-  unset($rs->auth0_object);
-  return $rs;
+  if (!empty($rs)) {
+    $rs = drupal_unpack($rs, 'auth0_object');
+    unset($rs->auth0_object);
+    return $rs;
+  }
+  return FALSE;
 }
 
 
