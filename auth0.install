@@ -38,7 +38,7 @@ function auth0_schema() {
  */
 function auth0_install() {
     drupal_install_schema('auth0_user_services');
-    $css = <<<EOT
+    $css = "
 #a0-widget .a0-panel {
     min-width: 90%;
     padding: 5%;
@@ -48,14 +48,15 @@ function auth0_install() {
 #a0-widget .a0-panel {
     background-color: #f6f6f2;
     border-color: #f9f9f9;
-}
-EOT;
+}";
 
-    variable_set('auth0_login_css', $css);
-    variable_set('auth0_widget_cdn','http://cdn.auth0.com/w2/auth0-widget-4.0.min.js');
-    variable_set('auth0_form_title', 'Sign In');
-    variable_set('auth0_requires_verified_email', true);
-    variable_set('auth0_allow_signup', true);
+    $config = \Drupal::service('config.factory')->getEditable('auth0.settings');
+    $config->set('auth0_login_css', $css)
+            ->set('auth0_widget_cdn', 'http://cdn.auth0.com/js/lock-9.2.min.js')
+            ->set('auth0_form_title', 'Sign In')
+            ->set('auth0_requires_verified_email', true)
+            ->set('auth0_allow_signup', true)
+            ->save();
 }
 
 /**

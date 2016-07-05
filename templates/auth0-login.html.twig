@@ -1,0 +1,22 @@
+<div id="auth0-login-form" style=" min-height: 440px;"></div>
+
+<script id="auth0" src="{{ widgetCdn }}"></script>
+<script type="text/javascript">
+
+    var lock = new Auth0Lock('{{clientID}}','{{domain}}');
+
+    lock.show({
+        callbackURL: '{{callbackURL}}',
+        responseType: 'code',
+        showSignup: {{showSignup ? "true" : "false"}},
+        container: 'auth0-login-form',
+        authParams: {
+            state: '{{state}}',
+            scope: 'openid'
+        }
+    });
+
+</script>
+
+<style type="text/css">{{ loginCSS }}</style>
+
