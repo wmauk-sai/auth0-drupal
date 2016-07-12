@@ -2,8 +2,21 @@ auth0.login:
   path: '/user/login'
   defaults:
     _controller: '\Drupal\auth0\Controller\AuthController::login'
+    _title: 'Log in'
   requirements:
-    _access: 'TRUE'
+    _user_is_logged_in: 'FALSE'
+  options:
+    _maintenance_access: TRUE
+
+auth0.legacy_login:
+  path: '/user/login/legacy'
+  defaults:
+    _form: '\Drupal\user\Form\UserLoginForm'
+    _title: 'Log in'
+  requirements:
+    _user_is_logged_in: 'FALSE'
+  options:
+    _maintenance_access: TRUE
 
 auth0.callback:
   path: '/auth0/callback'

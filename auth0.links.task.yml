@@ -6,6 +6,6 @@ auth0.menu_basic_settings:
 
 auth0.menu_advanced_settings:
   route_name: auth0.advanced_settings
-  title: 'Backup'
+  title: 'Advanced'
   base_route: auth0.settings
   weight: 1
