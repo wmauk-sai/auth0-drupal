@@ -607,6 +607,8 @@ function template_preprocess_auth0_lock(&$vars) {
     $vars['params']['disableResetAction'] = FALSE;    
   }
 
+  drupal_alter('auth0_params', $vars['params']);
+
   // Generate a link to a login form to be displayed as a no-js fallback.
   $query = array(
     'redirect_uri' => $vars['params']['callbackURL'], 
