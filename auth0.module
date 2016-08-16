@@ -1,7 +1,7 @@
 <?php
 
 // Define some module default settings
-define('AUTH0_WIDGET_CDN', 'http://cdn.auth0.com/js/lock-7.min.js');
+define('AUTH0_WIDGET_CDN', 'https://cdn.auth0.com/js/lock-7.min.js');
 define('AUTH_LOGIN_CSS', "#a0-widget .a0-panel {
     min-width: 90%;
     padding: 5%;
