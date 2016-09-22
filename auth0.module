@@ -1,7 +1,7 @@
 <?php
 
 // Define some module default settings
-define('AUTH0_WIDGET_CDN', 'https://cdn.auth0.com/js/lock-7.min.js');
+define('AUTH0_WIDGET_CDN', 'https://cdn.auth0.com/js/lock/10.2/lock.min.js');
 define('AUTH_LOGIN_CSS', "#a0-widget .a0-panel {
     min-width: 90%;
     padding: 5%;
@@ -487,6 +487,13 @@ function auth0_advanced_settings_form($form, &$form_state) {
     '#description' => t('Check this box to use the <a href="@url">returnTo URLs</a> at the Account Level', array('@url' => 'https://auth0.com/docs/logout#redirecting-users-after-logout')),
   );
 
+  $form['auth0_lock_extra_settings'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Lock extra setting'),
+      '#default_value' => variable_get('auth0_lock_extra_settings'),
+      '#description' => t('This should be a valid JSON file. This entire object will be passed to the lock options parameter.')
+  );
+
   return system_settings_form($form);
 }
 
@@ -599,23 +606,33 @@ function template_preprocess_auth0_lock(&$vars) {
   $vars['sso_enabled'] = (boolean)variable_get("auth0_sso", FALSE);
   $vars['domain'] = check_plain(variable_get("auth0_domain", ''));
   $vars['client_id'] = check_plain(variable_get("auth0_client_id", ''));
+  $vars['lock_extra_settings'] = json_decode(variable_get("auth0_lock_extra_settings", ''), true);
 
-  $vars['params'] = array(
-    'callbackURL' => url('auth0/callback', array('absolute' => TRUE, 'query' => drupal_get_destination())),
-    'authParams' => array(
-      'state' => drupal_get_token('auth0_state'),
-    ),
-    'disableSignupAction' => TRUE,
-    'disableResetAction' => TRUE,
-    'container' => 'auth0-login-form',
-    'sso' => $vars['sso_enabled'],
-    'rememberLastLogin' => $vars['sso_enabled'],
-    'mode' => $vars['mode'],
-  );
+  if ($vars['lock_extra_settings'] === null) {
+    $vars['lock_extra_settings'] = array();
+  }
+
+  $vars['params'] = $vars['lock_extra_settings'];
+
+  $vars['params']['container'] = isset($vars['params']['container']) ? $vars['params']['container'] : 'auth0-login-form';
+  $vars['params']['sso'] = isset($vars['sso_enabled']) ? $vars['sso_enabled'] : false;
+
+  $vars['params']['auth'] = isset($vars['params']['auth']) ? $vars['params']['auth'] : array();
+  $vars['params']['auth']['redirectUrl'] = isset($vars['params']['auth']['redirectUrl']) ? $vars['params']['auth']['redirectUrl'] : url('auth0/callback', array('absolute' => TRUE, 'query' => drupal_get_destination()));
+  $vars['params']['auth']['responseType'] = isset($vars['params']['auth']['responseType']) ? $vars['params']['auth']['responseType'] : 'code';
+
+  $vars['params']['auth']['params'] = isset($vars['params']['auth']['params']) ? $vars['params']['auth']['params'] : array();
+  $vars['params']['auth']['params']['scope'] = isset($vars['params']['auth']['params']['scope']) ? $vars['params']['auth']['params']['scope'] : 'openid email';
+  $vars['params']['auth']['params']['state'] = isset($vars['params']['auth']['params']['state']) ? $vars['params']['auth']['params']['state'] : drupal_get_token('auth0_state');
+
   if (auth0_enabled('signup')) {
-    $vars['params']['disableSignupAction'] = FALSE;    
+    $vars['params']['allowSignUp'] = TRUE;    
+  } else {
+    $vars['params']['allowSignUp'] = FALSE;    
   }
   if (auth0_enabled('reset')) {
+    $vars['params']['disableResetAction'] = TRUE;    
+  } else {
     $vars['params']['disableResetAction'] = FALSE;    
   }
 
