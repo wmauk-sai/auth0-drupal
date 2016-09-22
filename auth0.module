@@ -81,6 +81,7 @@ function auth0_theme() {
         'widgetCdn' => null,
         'loginCSS' => null,
         'callbackURL' => null,
+        'lockExtraSettings' => '{}',
       ),
     ),
   );

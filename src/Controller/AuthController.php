@@ -29,6 +29,12 @@ class AuthController extends ControllerBase {
 
     $config = \Drupal::service('config.factory')->get('auth0.settings');
 
+    $lockExtraSettings = $config->get('auth0_lock_extra_settings');
+
+    if (trim($lockExtraSettings) == "") {
+      $lockExtraSettings = "{}";
+    }
+
     return array(
       '#theme' => 'auth0_login',
       '#domain' => $config->get('auth0_domain'),
@@ -37,6 +43,7 @@ class AuthController extends ControllerBase {
       '#showSignup' => $config->get('auth0_allow_signup'),
       '#widgetCdn' => $config->get('auth0_widget_cdn'),
       '#loginCSS' => $config->get('auth0_login_css'),
+      '#lockExtraSettings' => $lockExtraSettings,
       '#callbackURL' => "$base_root/auth0/callback",
     );
 

@@ -60,6 +60,13 @@ class BasicAdvancedForm extends FormBase {
         '#description' => t('This css controls how the widget look and feel.')
     );
 
+    $form['auth0_lock_extra_settings'] = array(
+        '#type' => 'textarea',
+        '#title' => t('Lock extra settings'),
+        '#default_value' => $config->get('auth0_lock_extra_settings'),
+        '#description' => t('This should be a valid JSON file. This entire object will be passed to the lock options parameter.')
+    );
+
     $form['actions']['#type'] = 'actions';
     $form['actions']['submit'] = array(
       '#type' => 'submit',
@@ -88,6 +95,7 @@ class BasicAdvancedForm extends FormBase {
             ->set('auth0_widget_cdn', $form_state->getValue('auth0_widget_cdn'))
             ->set('auth0_requires_verified_email', $form_state->getValue('auth0_requires_verified_email'))
             ->set('auth0_login_css', $form_state->getValue('auth0_login_css'))
+            ->set('auth0_lock_extra_settings', $form_state->getValue('auth0_lock_extra_settings'))
             ->save();
   }
 
