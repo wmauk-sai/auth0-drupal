@@ -283,6 +283,7 @@ function auth0_update_fields_and_roles($user_info, $uid)
 
   //dd($edit, 'values to edit');
   user_save($the_user, $edit);
+  //cache_clear_all('menu:'. $uid, TRUE);
 
   //dd(user_load($uid), 'the_user after updates');
 }
@@ -362,13 +363,10 @@ function auth0_update_roles($user_info, $uid, $the_user, &$edit)
     $new_user_roles = array_merge(array_diff($user_roles, $not_granted), $roles_granted);
     //dd($new_user_roles, 'new_user_roles');
 
-    foreach (array_diff($roles_granted, $user_roles) as $role) {
-      $the_user->roles[] = $role;
-    }
-
     if (!empty(array_diff($user_roles, $new_user_roles))) {
       //dd('changes to roles detected');
       $edit['roles'] = $new_user_roles;
+      $the_user->roles = $new_user_roles;
     }
   }
 }
