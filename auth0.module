@@ -134,7 +134,7 @@ function auth0_verify_email_page() {
 
 /**
  * User login API callback.
- * 
+ *
  * Checks the parameters passed by redirection from Auth0 and logs or registers
  * the user if the parameters are valid.
  */
@@ -219,7 +219,7 @@ function auth0_login_auth0_user($user_info, $id_token) {
     return auth0_authenticate_user($uid);
   }
   else {
-    // If the user doesn't exist we need to either create a new one, or assign 
+    // If the user doesn't exist we need to either create a new one, or assign
     // him to an existing one.
     $isDatabaseUser = FALSE;
     foreach ($user_info['identities'] as $identity) {
@@ -270,40 +270,107 @@ function auth0_login_auth0_user($user_info, $id_token) {
 /**
  * Update the field mappings and role mappings for a user based on auth0 user data
  */
-function auth0_update_fields_and_roles($user_info, $uid) {
-    dfb('testing dfb');
-    dd('testing dd');
-    kprint_r('testing kprint');
+function auth0_update_fields_and_roles($user_info, $uid)
+{
+  //dd($user_info, 'auth0_update_fields_and_roles called');
 
-    dd($user_info, 'auth0_update_fields_and_roles called');
-    dd(variable_get('auth0_claim_mapping'), 'auth0_claim_mapping');
+  $the_user = user_load($uid);
+  //dd($the_user, 'the_user before updates');
+  $edit = array();
 
+  auth0_update_fields($user_info, $uid, $the_user, $edit);
+  auth0_update_roles($user_info, $uid, $the_user, $edit);
+
+  //dd($edit, 'values to edit');
+  user_save($the_user, $edit);
+
+  //dd(user_load($uid), 'the_user after updates');
+}
+
+/*
+ * Update the $user profile attributes of a user based on the auth0 field mappings
+ */
+function auth0_update_fields($user_info, $uid, $the_user, &$edit)
+{
+  $auth0_claim_mapping = variable_get('auth0_claim_mapping');
+  //dd($auth0_claim_mapping, 'auth0_claim_mapping');
+
+  if (isset($auth0_claim_mapping) && !empty($auth0_claim_mapping)) {
     // For each claim mapping, lookup the value, otherwise set to blank
-    $edit = array();
-    $mappings = auth0_pipeListToArray(variable_get('auth0_claim_mapping'));
-    dd($mappings, 'auth0_claim_mapping as array');
+    $mappings = auth0_pipeListToArray($auth0_claim_mapping);
+    //dd($mappings, 'auth0_claim_mapping as array');
     foreach ($mappings as $mapping) {
-        dd($mapping, 'mapping');
-        $value = isset($user_info[$mapping[0]]) ? $user_info[$mapping[0]] : '';
-        $key = $mapping[1];
-        //array()[LANGUAGE_NONE][0]['value'] = 'foo';
-        $edit[$key] = array(
-            LANGUAGE_NONE => array (
-                0 => array (
-                    'value' => $value
-                )
-            )
-        );
+      //dd($mapping, 'mapping');
+
+      $value = isset($user_info[$mapping[0]]) ? $user_info[$mapping[0]] : '';
+      $key = $mapping[1];
+      //array()[LANGUAGE_NONE][0]['value'] = 'foo';
+      $edit[$key] = array(
+        LANGUAGE_NONE => array(
+          0 => array(
+            'value' => $value
+          )
+        )
+      );
+    }
+  }
+}
+
+/**
+ * Updates the $user->roles of a user based on the auth0 role mappings
+ */
+function auth0_update_roles($user_info, $uid, $the_user, &$edit)
+{
+  $auth0_claim_to_use_for_role = variable_get('auth0_claim_to_use_for_role');
+  if (isset($auth0_claim_to_use_for_role) && !empty($auth0_claim_to_use_for_role)) {
+    $claim_value = isset($user_info[$auth0_claim_to_use_for_role]) ? $user_info[$auth0_claim_to_use_for_role] : '';
+    //dd($claim_value, 'claim_value');
+
+    $claim_values = array();
+    if (is_array($claim_value)) {
+      $claim_values = $claim_value;
+    } else {
+      $claim_values[] = $claim_value;
+    }
+    //dd($claim_values, 'claim_values');
+
+    $auth0_role_mapping = variable_get('auth0_role_mapping');
+    $mappings = auth0_pipeListToArray($auth0_role_mapping);
+    //dd($mappings, 'auth0_role_mapping as array');
+
+    $roles_granted = array();
+    $roles_managed_by_mapping = array();
+    foreach ($mappings as $mapping) {
+      //dd($mapping, 'mapping');
+      $roles_managed_by_mapping[] = $mapping[1];
+
+      if (in_array($mapping[0], $claim_values)) {
+        $roles_granted[] = $mapping[1];
+      }
+    }
+    $roles_granted = array_unique($roles_granted);
+    $roles_managed_by_mapping = array_unique($roles_managed_by_mapping);
+    //dd($roles_granted, 'roles_granted');
+    //dd($roles_managed_by_mapping, 'roles_managed_by_mapping');
+
+    $not_granted = array_diff($roles_managed_by_mapping, $roles_granted);
+    //dd($not_granted, 'not_granted');
+
+    $user_roles = $the_user->roles;
+    //dd($user_roles, 'user_roles');
+
+    $new_user_roles = array_merge(array_diff($user_roles, $not_granted), $roles_granted);
+    //dd($new_user_roles, 'new_user_roles');
+
+    foreach (array_diff($roles_granted, $user_roles) as $role) {
+      $the_user->roles[] = $role;
     }
 
-    dd($edit, 'values to edit');
-
-    $tmp = user_load($uid);
-    // TODO: look at the field mapping and map any specified fields
-    //user_save($tmp, array( 'field_nrds_id' => 'newValue' ));
-    user_save($tmp, $edit);
-
-    dd(user_load($uid), 'loading user after update');
+    if (!empty(array_diff($user_roles, $new_user_roles))) {
+      //dd('changes to roles detected');
+      $edit['roles'] = $new_user_roles;
+    }
+  }
 }
 
 function auth0_mappingsToPipeList($mappings) {
@@ -329,7 +396,7 @@ function auth0_pipeListToArray($mapping_list_txt, $make_item0_lowercase = FALSE)
 
 /**
  * Authenticate the given user.
- * 
+ *
  * We use our own login form because user_external_login loads the login form which
  * we are modifying.
  */
@@ -350,7 +417,7 @@ function auth0_user($op, &$edit, &$account, $category = NULL) {
 
 /**
  * Implements hook_user_delete().
- * 
+ *
  * Removes the user from the auth0_user table.
  */
 function auth0_user_delete($account) {
@@ -440,7 +507,7 @@ function auth0_create_user_from_auth0($user_info) {
 
 /**
  * Implements hook_theme().
- * 
+ *
  * Define the template to use for the /user action.
  */
 function auth0_theme() {
@@ -567,28 +634,31 @@ function auth0_advanced_settings_form($form, &$form_state) {
     '#cols' => 50,
     '#rows' => 5,
     '#default_value' => variable_get('auth0_claim_mapping'),
-    '#description' => t('Enter claim mappings here in the format: &lt;claim_name>|&lt;profile_field_name>
-<br/>For example:
+    '#description' => t('Enter claim mappings here in the format &lt;claim_name>|&lt;profile_field_name> (one per line), e.g:
+<br/>
 <br/>given_name|field_first_name
 <br/>family_name|field_last_name
-<br/>user_metadata.example_field|field_example_field
 '),
   );
 
   $form['auth0_claim_to_use_for_role'] = array(
     '#type' => 'textfield',
-    '#title' => t('Claim to use to Map to Role:'),
+    '#title' => t('Claim for Role Mapping:'),
     '#default_value' => variable_get('auth0_claim_to_use_for_role'),
-    '#description' => t('Name of the claim to use, e.g. roles.  If the claim contains a list of values, the first value to match a mapping below will be used.')
+    '#description' => t('Name of the claim to use to map to Drupal roles, e.g. roles.  If the claim contains a list of values, all values will be used in the mappings below.')
   );
 
   $form['auth0_role_mapping'] = array(
     '#type' => 'textarea',
-    '#title' => t('Role Mapping'),
+    '#title' => t('Mapping of Claim Role Values to Drupal Roles (one per line)'),
     '#default_value' => variable_get('auth0_role_mapping'),
-    '#description' => t('Enter role mappings here in the format &lt;auth0 claim value>|&lt;drupal role name>, e.g.:
+    '#description' => t('Enter role mappings here in the format &lt;auth0 claim value>|&lt;drupal role name> (one per line), e.g.:
+<br/>
 <br/>admin|administrator
 <br/>poweruser|power users
+<br/>
+<br/>NOTE: for any drupal role in the mapping, if a user is not mapped to the role, the role will be removed from their profile.  
+Drupal roles not listed above will not be changed by this module.
 ')
   );
 
@@ -597,7 +667,7 @@ function auth0_advanced_settings_form($form, &$form_state) {
 
 /**
  * Implements hook_user_logout().
- * 
+ *
  * Logs the user out of Auth0 if SSO is in use.
  */
 function auth0_user_logout($account) {
@@ -606,7 +676,7 @@ function auth0_user_logout($account) {
     session_destroy();
 
     $domain = check_plain(variable_get("auth0_domain", ''));
-    
+
     if(variable_get("auth0_returnTo_app",FALSE)) {
       $client = check_plain(variable_get("auth0_client_id", ''));
       drupal_goto("https://$domain/v2/logout?returnTo=" . urlencode(url('<front>', array('absolute' => TRUE))) . "&client_id=$client");
@@ -618,7 +688,7 @@ function auth0_user_logout($account) {
 
 /**
  * Implements hook_form_alter().
- * 
+ *
  * Replace the user login forms with the Auth0 login widget.
  */
 function auth0_form_alter(&$form, $form_state, $form_id) {
@@ -638,7 +708,7 @@ function auth0_form_alter(&$form, $form_state, $form_id) {
   if ($form_id == 'user_pass' && auth0_enabled('reset')) {
     _auth0_form_replace_with_lock($form, 'reset');
   }
-  
+
   // If the settings say to remove the signup altogether.
   if (!variable_get('auth0_allow_signup', '')) {
     if ($form_id == 'user_register_form' || $form_id == 'user_pass') {
@@ -650,14 +720,14 @@ function auth0_form_alter(&$form, $form_state, $form_id) {
 
 /**
  * Implements hook_user_form_user_profile_form_alter().
- * 
+ *
  * Disable email and password fields for users who have logged in with Auth0.
  */
 function auth0_form_user_profile_form_alter(&$form, $form_state) {
   $user = $form_state['user'];
   if ($object = auth0_get_auth0_object_from_drupal_uid($user->uid)) {
     // If the user has an Auth0 profile then we simply disable the password/email fields.
-    
+
     // If this account was created without an email address hide the field,
     // otherwise show it but disable it.
     if ($user->mail) {
@@ -677,7 +747,7 @@ function auth0_form_user_profile_form_alter(&$form, $form_state) {
 
     // @TODO: Reenable the password/email editing ability if the connection providor is Auth0
     // This will require using the API to update the info in Auth0
-  } 
+  }
 }
 
 /**
@@ -724,26 +794,26 @@ function template_preprocess_auth0_lock(&$vars) {
   $vars['params']['auth']['params']['state'] = isset($vars['params']['auth']['params']['state']) ? $vars['params']['auth']['params']['state'] : drupal_get_token('auth0_state');
 
   if (auth0_enabled('signup')) {
-    $vars['params']['allowSignUp'] = TRUE;    
+    $vars['params']['allowSignUp'] = TRUE;
   } else {
-    $vars['params']['allowSignUp'] = FALSE;    
+    $vars['params']['allowSignUp'] = FALSE;
   }
   if (auth0_enabled('reset')) {
-    $vars['params']['disableResetAction'] = TRUE;    
+    $vars['params']['disableResetAction'] = TRUE;
   } else {
-    $vars['params']['disableResetAction'] = FALSE;    
+    $vars['params']['disableResetAction'] = FALSE;
   }
 
   drupal_alter('auth0_params', $vars['params']);
 
   // Generate a link to a login form to be displayed as a no-js fallback.
   $query = array(
-    'redirect_uri' => $vars['params']['callbackURL'], 
-    'client_id' => $vars['client_id'], 
-    'response_type' => 'code', 
+    'redirect_uri' => $vars['params']['callbackURL'],
+    'client_id' => $vars['client_id'],
+    'response_type' => 'code',
     'state' => $vars['params']['authParams']['state']
     );
-  $vars['login_link'] = l(t('Log in'), 'https://' . $vars['domain'] . '/authorize', array('query' => $query)); 
+  $vars['login_link'] = l(t('Log in'), 'https://' . $vars['domain'] . '/authorize', array('query' => $query));
 
   // Add the custom css if specified.
   if ($css = variable_get("auth0_login_css", AUTH_LOGIN_CSS)) {
@@ -820,7 +890,7 @@ function auth0_missing_dependencies_message() {
     t(
         'Auth0 is not fully installed. See the module\'s INSTALL.txt file for installation instructions.',
         array('!url' => 'https://www.drupal.org/project/composer_manager')
-    ), 
+    ),
     'warning'
   );
 }
