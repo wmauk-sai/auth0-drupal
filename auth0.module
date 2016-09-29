@@ -212,6 +212,9 @@ function auth0_login_auth0_user($user_info, $id_token) {
     // The user exists. Update the auth0_user with the new userInfo object.
     auth0_update_auth0_object($user_info);
 
+    // Update field and role mappings
+    auth0_update_fields_and_roles($user_info, $uid);
+
     // Log in the user.
     return auth0_authenticate_user($uid);
   }
@@ -254,12 +257,75 @@ function auth0_login_auth0_user($user_info, $id_token) {
 
     auth0_insert_auth0_user($user_info, $uid);
 
-    // Log in the user.
+    // Update field and role mappings
+    auth0_update_fields_and_roles($user_info, $uid);
+
+      // Log in the user.
     return auth0_authenticate_user($uid);
   }
 
   return FALSE;
 }
+
+/**
+ * Update the field mappings and role mappings for a user based on auth0 user data
+ */
+function auth0_update_fields_and_roles($user_info, $uid) {
+    dfb('testing dfb');
+    dd('testing dd');
+    kprint_r('testing kprint');
+
+    dd($user_info, 'auth0_update_fields_and_roles called');
+    dd(variable_get('auth0_claim_mapping'), 'auth0_claim_mapping');
+
+    // For each claim mapping, lookup the value, otherwise set to blank
+    $edit = array();
+    $mappings = auth0_pipeListToArray(variable_get('auth0_claim_mapping'));
+    dd($mappings, 'auth0_claim_mapping as array');
+    foreach ($mappings as $mapping) {
+        dd($mapping, 'mapping');
+        $value = isset($user_info[$mapping[0]]) ? $user_info[$mapping[0]] : '';
+        $key = $mapping[1];
+        //array()[LANGUAGE_NONE][0]['value'] = 'foo';
+        $edit[$key] = array(
+            LANGUAGE_NONE => array (
+                0 => array (
+                    'value' => $value
+                )
+            )
+        );
+    }
+
+    dd($edit, 'values to edit');
+
+    $tmp = user_load($uid);
+    // TODO: look at the field mapping and map any specified fields
+    //user_save($tmp, array( 'field_nrds_id' => 'newValue' ));
+    user_save($tmp, $edit);
+
+    dd(user_load($uid), 'loading user after update');
+}
+
+function auth0_mappingsToPipeList($mappings) {
+    $result_text = "";
+    foreach ($mappings as $map) {
+        $result_text .= $map['from'] . '|' . $map['user_entered'] . "\n";
+    }
+    return $result_text;
+}
+
+function auth0_pipeListToArray($mapping_list_txt, $make_item0_lowercase = FALSE) {
+    $result_array = array();
+    $mappings = preg_split('/[\n\r]+/', $mapping_list_txt);
+    foreach ($mappings as $line) {
+        if (count($mapping = explode('|', trim($line))) == 2) {
+            $item_0 = ($make_item0_lowercase) ? drupal_strtolower(trim($mapping[0])) : trim($mapping[0]);
+            $result_array[] = array($item_0, trim($mapping[1]));
+        }
+    }
+    return $result_array;
+}
+
 
 /**
  * Authenticate the given user.
@@ -492,6 +558,38 @@ function auth0_advanced_settings_form($form, &$form_state) {
       '#title' => t('Lock extra setting'),
       '#default_value' => variable_get('auth0_lock_extra_settings'),
       '#description' => t('This should be a valid JSON file. This entire object will be passed to the lock options parameter.')
+  );
+
+  // Enhancement to support mapping claims to user attributes and to roles
+  $form['auth0_claim_mapping'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Mapping of Claims to Profile Fields (one per line):'),
+    '#cols' => 50,
+    '#rows' => 5,
+    '#default_value' => variable_get('auth0_claim_mapping'),
+    '#description' => t('Enter claim mappings here in the format: &lt;claim_name>|&lt;profile_field_name>
+<br/>For example:
+<br/>given_name|field_first_name
+<br/>family_name|field_last_name
+<br/>user_metadata.example_field|field_example_field
+'),
+  );
+
+  $form['auth0_claim_to_use_for_role'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Claim to use to Map to Role:'),
+    '#default_value' => variable_get('auth0_claim_to_use_for_role'),
+    '#description' => t('Name of the claim to use, e.g. roles.  If the claim contains a list of values, the first value to match a mapping below will be used.')
+  );
+
+  $form['auth0_role_mapping'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Role Mapping'),
+    '#default_value' => variable_get('auth0_role_mapping'),
+    '#description' => t('Enter role mappings here in the format &lt;auth0 claim value>|&lt;drupal role name>, e.g.:
+<br/>admin|administrator
+<br/>poweruser|power users
+')
   );
 
   return system_settings_form($form);
