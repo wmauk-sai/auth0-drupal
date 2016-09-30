@@ -272,20 +272,20 @@ function auth0_login_auth0_user($user_info, $id_token) {
  */
 function auth0_update_fields_and_roles($user_info, $uid)
 {
-  //dd($user_info, 'auth0_update_fields_and_roles called');
+  function_exists('dd') && dd($user_info, 'auth0_update_fields_and_roles called');
 
   $the_user = user_load($uid);
-  //dd($the_user, 'the_user before updates');
+  function_exists('dd') && dd($the_user, 'the_user before updates');
   $edit = array();
 
   auth0_update_fields($user_info, $uid, $the_user, $edit);
   auth0_update_roles($user_info, $uid, $the_user, $edit);
 
-  //dd($edit, 'values to edit');
+  function_exists('dd') && dd($edit, 'values to edit');
   user_save($the_user, $edit);
   //cache_clear_all('menu:'. $uid, TRUE);
 
-  //dd(user_load($uid), 'the_user after updates');
+  function_exists('dd') && dd(user_load($uid), 'the_user after updates');
 }
 
 /*
@@ -294,14 +294,14 @@ function auth0_update_fields_and_roles($user_info, $uid)
 function auth0_update_fields($user_info, $uid, $the_user, &$edit)
 {
   $auth0_claim_mapping = variable_get('auth0_claim_mapping');
-  //dd($auth0_claim_mapping, 'auth0_claim_mapping');
+  function_exists('dd') && dd($auth0_claim_mapping, 'auth0_claim_mapping');
 
   if (isset($auth0_claim_mapping) && !empty($auth0_claim_mapping)) {
     // For each claim mapping, lookup the value, otherwise set to blank
     $mappings = auth0_pipeListToArray($auth0_claim_mapping);
-    //dd($mappings, 'auth0_claim_mapping as array');
+    function_exists('dd') && dd($mappings, 'auth0_claim_mapping as array');
     foreach ($mappings as $mapping) {
-      //dd($mapping, 'mapping');
+      function_exists('dd') && dd($mapping, 'mapping');
 
       $value = isset($user_info[$mapping[0]]) ? $user_info[$mapping[0]] : '';
       $key = $mapping[1];
@@ -325,7 +325,7 @@ function auth0_update_roles($user_info, $uid, $the_user, &$edit)
   $auth0_claim_to_use_for_role = variable_get('auth0_claim_to_use_for_role');
   if (isset($auth0_claim_to_use_for_role) && !empty($auth0_claim_to_use_for_role)) {
     $claim_value = isset($user_info[$auth0_claim_to_use_for_role]) ? $user_info[$auth0_claim_to_use_for_role] : '';
-    //dd($claim_value, 'claim_value');
+    function_exists('dd') && dd($claim_value, 'claim_value');
 
     $claim_values = array();
     if (is_array($claim_value)) {
@@ -333,16 +333,16 @@ function auth0_update_roles($user_info, $uid, $the_user, &$edit)
     } else {
       $claim_values[] = $claim_value;
     }
-    //dd($claim_values, 'claim_values');
+    function_exists('dd') && dd($claim_values, 'claim_values');
 
     $auth0_role_mapping = variable_get('auth0_role_mapping');
     $mappings = auth0_pipeListToArray($auth0_role_mapping);
-    //dd($mappings, 'auth0_role_mapping as array');
+    function_exists('dd') && dd($mappings, 'auth0_role_mapping as array');
 
     $roles_granted = array();
     $roles_managed_by_mapping = array();
     foreach ($mappings as $mapping) {
-      //dd($mapping, 'mapping');
+      function_exists('dd') && dd($mapping, 'mapping');
       $roles_managed_by_mapping[] = $mapping[1];
 
       if (in_array($mapping[0], $claim_values)) {
@@ -351,17 +351,17 @@ function auth0_update_roles($user_info, $uid, $the_user, &$edit)
     }
     $roles_granted = array_unique($roles_granted);
     $roles_managed_by_mapping = array_unique($roles_managed_by_mapping);
-    //dd($roles_granted, 'roles_granted');
-    //dd($roles_managed_by_mapping, 'roles_managed_by_mapping');
+    function_exists('dd') && dd($roles_granted, 'roles_granted');
+    function_exists('dd') && dd($roles_managed_by_mapping, 'roles_managed_by_mapping');
 
     $not_granted = array_diff($roles_managed_by_mapping, $roles_granted);
-    //dd($not_granted, 'not_granted');
+    function_exists('dd') && dd($not_granted, 'not_granted');
 
     $user_roles = $the_user->roles;
-    //dd($user_roles, 'user_roles');
+    function_exists('dd') && dd($user_roles, 'user_roles');
 
     $new_user_roles = array_merge(array_diff($user_roles, $not_granted), $roles_granted);
-    //dd($new_user_roles, 'new_user_roles');
+    function_exists('dd') && dd($new_user_roles, 'new_user_roles');
 
     if (!empty(array_diff($new_user_roles, $user_roles))) {
       $new_user_roles_map = array();
@@ -369,7 +369,7 @@ function auth0_update_roles($user_info, $uid, $the_user, &$edit)
         $role = user_role_load_by_name($new_role);
         $new_user_roles_map[$role->rid] = $role->name;
       }
-      //dd($new_user_roles_map, 'changes to roles detected');
+      function_exists('dd') && dd($new_user_roles_map, 'changes to roles detected');
       $edit['roles'] = $new_user_roles_map;
       $the_user->roles = $new_user_roles_map;
     }
