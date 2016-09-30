@@ -363,7 +363,8 @@ function auth0_update_roles($user_info, $uid, $the_user, &$edit)
     $new_user_roles = array_merge(array_diff($user_roles, $not_granted), $roles_granted);
     function_exists('dd') && dd($new_user_roles, 'new_user_roles');
 
-    if (!empty(array_diff($new_user_roles, $user_roles))) {
+    $tmp = array_diff($new_user_roles, $user_roles);
+    if (!empty($tmp)) {
       $new_user_roles_map = array();
       foreach ($new_user_roles as $new_role) {
         $role = user_role_load_by_name($new_role);
