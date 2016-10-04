@@ -1,7 +1,7 @@
 <?php
 
 // Define some module default settings
-define('AUTH0_WIDGET_CDN', 'https://cdn.auth0.com/js/lock/10.2/lock.min.js');
+define('AUTH0_WIDGET_CDN', 'https://cdn.auth0.com/js/lock/10.3/lock.min.js');
 define('AUTH_LOGIN_CSS', "#a0-widget .a0-panel {
     min-width: 90%;
     padding: 5%;
@@ -617,7 +617,7 @@ function auth0_advanced_settings_form($form, &$form_state) {
     '#description' => t('This CSS controls the widget look and feel.'),
   );
 // Add option to have the logout url at the application level or account level
-  $form['auth0_returnTo_account'] = array(
+  $form['auth0_returnTo_app'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use returnTo URLs at the App Level'),
     '#default_value' => variable_get('auth0_returnTo_app', FALSE),
