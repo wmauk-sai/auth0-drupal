@@ -300,19 +300,26 @@ function auth0_update_fields($user_info, $uid, $the_user, &$edit)
     // For each claim mapping, lookup the value, otherwise set to blank
     $mappings = auth0_pipeListToArray($auth0_claim_mapping);
     function_exists('dd') && dd($mappings, 'auth0_claim_mapping as array');
+
+    // Remove mappings handled automatically by the module
+    $skip_mappings = array('uid', 'name', 'mail', 'init', 'is_new', 'status', 'pass');
     foreach ($mappings as $mapping) {
       function_exists('dd') && dd($mapping, 'mapping');
 
-      $value = isset($user_info[$mapping[0]]) ? $user_info[$mapping[0]] : '';
       $key = $mapping[1];
-      //array()[LANGUAGE_NONE][0]['value'] = 'foo';
-      $edit[$key] = array(
-        LANGUAGE_NONE => array(
-          0 => array(
-            'value' => $value
+      if (in_array($key, $skip_mappings)) {
+        function_exists('dd') && dd($mapping, 'skipping mapping handled already by auth0 module');
+      } else {
+        $value = isset($user_info[$mapping[0]]) ? $user_info[$mapping[0]] : '';
+        //array()[LANGUAGE_NONE][0]['value'] = 'foo';
+        $edit[$key] = array(
+          LANGUAGE_NONE => array(
+            0 => array(
+              'value' => $value
+            )
           )
-        )
-      );
+        );
+      }
     }
   }
 }
@@ -493,7 +500,14 @@ function auth0_create_user_from_auth0($user_info) {
   }
   $user->name = $username;
   $user->is_new = TRUE;
-  $user->status = variable_get('user_register', USER_REGISTER_VISITORS_ADMINISTRATIVE_APPROVAL) == USER_REGISTER_VISITORS;
+
+  // If auto_register from auth0 is enabled, they are active immediately, otherwise check the site registration settings
+  $auth0_auto_register = variable_get('auth0_auto_register', FALSE);
+  if ($auth0_auto_register) {
+    $user->status = TRUE;
+  } else {
+    $user->status = variable_get('user_register', USER_REGISTER_VISITORS_ADMINISTRATIVE_APPROVAL) == USER_REGISTER_VISITORS;
+  }
   $user->pass = user_password();
   $new_user = user_save($user);
 
@@ -631,6 +645,13 @@ function auth0_advanced_settings_form($form, &$form_state) {
       '#description' => t('This should be a valid JSON file. This entire object will be passed to the lock options parameter.')
   );
 
+  $form['auth0_auto_register'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Auto Register Auth0 users (ignore site registration settings)'),
+    '#default_value' => variable_get('auth0_auto_register', FALSE),
+    '#description' => t('Enable this option if you want new auth0 users to automatically be activated within Drupal regardless of the global site visitor registration settings (e.g. requiring admin approval).'),
+  );
+
   // Enhancement to support mapping claims to user attributes and to roles
   $form['auth0_claim_mapping'] = array(
     '#type' => 'textarea',
@@ -642,6 +663,9 @@ function auth0_advanced_settings_form($form, &$form_state) {
 <br/>
 <br/>given_name|field_first_name
 <br/>family_name|field_last_name
+<br/>
+<br/>NOTE: the following Drupal fields are handled automatically and will be ignored if specified above:
+<br/>    uid, name, mail, init, is_new, status, pass
 '),
   );
 

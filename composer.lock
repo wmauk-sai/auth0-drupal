@@ -4,7 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "aa144b196a26dfe6ffeba2cb3172a346",
+    "hash": "fbe62387da294843feea19fd2d0a4bf0",
+    "content-hash": "abee1b7b29b941452253d738db2f780e",
     "packages": [
         {
             "name": "adoy/oauth2",
@@ -12,12 +13,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/adoy/PHP-OAuth2.git",
-                "reference": "27c0d7f65e25074ce1c4a916c798db3a29c85e9d"
+                "reference": "83e248f761f1c2f742d321d891cc3ce63089db05"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/adoy/PHP-OAuth2/zipball/27c0d7f65e25074ce1c4a916c798db3a29c85e9d",
-                "reference": "27c0d7f65e25074ce1c4a916c798db3a29c85e9d",
+                "url": "https://api.github.com/repos/adoy/PHP-OAuth2/zipball/83e248f761f1c2f742d321d891cc3ce63089db05",
+                "reference": "83e248f761f1c2f742d321d891cc3ce63089db05",
                 "shasum": ""
             },
             "require": {
@@ -35,29 +36,29 @@
             ],
             "authors": [
                 {
-                    "name": "Pierrick Charron",
-                    "email": "pierrick@webstart.fr"
-                },
-                {
                     "name": "Berejeb Anis",
                     "email": "anis.berejeb@gmail.com"
+                },
+                {
+                    "name": "Charron Pierrick",
+                    "email": "pierrick@webstart.fr"
                 }
             ],
             "description": "Light PHP wrapper for the OAuth 2.0 protocol (based on OAuth 2.0 Authorization Protocol draft-ietf-oauth-v2-15)",
-            "time": "2014-03-07 16:05:00"
+            "time": "2015-08-03 19:57:45"
         },
         {
             "name": "auth0/auth0-php",
-            "version": "0.6.6",
+            "version": "0.6.8",
             "source": {
                 "type": "git",
-                "url": "https://github.com/auth0/Auth0-PHP.git",
-                "reference": "638f032fe38691da3c7ce9276040d045d40116ce"
+                "url": "https://github.com/auth0/auth0-PHP.git",
+                "reference": "98bebf6444086661d02877a44543fcb6c9636a70"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/auth0/Auth0-PHP/zipball/638f032fe38691da3c7ce9276040d045d40116ce",
-                "reference": "638f032fe38691da3c7ce9276040d045d40116ce",
+                "url": "https://api.github.com/repos/auth0/auth0-PHP/zipball/98bebf6444086661d02877a44543fcb6c9636a70",
+                "reference": "98bebf6444086661d02877a44543fcb6c9636a70",
                 "shasum": ""
             },
             "require": {
@@ -84,7 +85,7 @@
                 }
             ],
             "description": "Auth0 PHP SDK.",
-            "time": "2014-04-14 21:25:24"
+            "time": "2016-10-06 15:27:34"
         },
         {
             "name": "firebase/php-jwt",
@@ -92,23 +93,22 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/firebase/php-jwt.git",
-                "reference": "652f3c62094b2447a0c4cad6b11541bef19ebfaa"
+                "reference": "3aa3d978973f080746b2f2f75b10d3f38cbb0557"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/firebase/php-jwt/zipball/652f3c62094b2447a0c4cad6b11541bef19ebfaa",
-                "reference": "652f3c62094b2447a0c4cad6b11541bef19ebfaa",
+                "url": "https://api.github.com/repos/firebase/php-jwt/zipball/3aa3d978973f080746b2f2f75b10d3f38cbb0557",
+                "reference": "3aa3d978973f080746b2f2f75b10d3f38cbb0557",
                 "shasum": ""
             },
             "require": {
-                "php": ">=5.2.0"
+                "php": ">=5.3.0"
             },
             "type": "library",
             "autoload": {
-                "classmap": [
-                    "Authentication/",
-                    "Exceptions/"
-                ]
+                "psr-4": {
+                    "Firebase\\JWT\\": "src"
+                }
             },
             "notification-url": "https://packagist.org/downloads/",
             "license": [
@@ -128,7 +128,7 @@
             ],
             "description": "A simple library to encode and decode JSON Web Tokens (JWT) in PHP. Should conform to the current spec.",
             "homepage": "https://github.com/firebase/php-jwt",
-            "time": "2015-04-13 18:10:21"
+            "time": "2016-08-31 23:16:29"
         }
     ],
     "packages-dev": [],
