@@ -6,8 +6,6 @@
 
 namespace Drupal\auth0\Controller;
 
-require_once (AUTH0_PATH . '/vendor/autoload.php');
-
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Url;
 use Drupal\user\Entity\User;
