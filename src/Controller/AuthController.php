@@ -68,7 +68,7 @@ class AuthController extends ControllerBase {
     try {
         $userInfo = $auth0->getUserInfo();
         $idToken = $auth0->getIdToken();
-    } catch(Exception $e) {
+    } catch(\Exception $e) {
 
     }
 
@@ -247,7 +247,7 @@ class AuthController extends ControllerBase {
     catch(\UnexpectedValueException $e) {
        drupal_set_message(t('Your session has expired.'),'error');
     }
-    catch(Exception $e) {
+    catch(\Exception $e) {
        drupal_set_message(t('Sorry, we couldnt send the email'),'error');
     }
 
