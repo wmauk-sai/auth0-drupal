@@ -6,11 +6,19 @@
 
 namespace Drupal\auth0\Controller;
 
+if (file_exists(AUTH0_PATH . '/vendor/autoload.php')) {
+  require_once (AUTH0_PATH . '/vendor/autoload.php');
+}
+
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Url;
 use Drupal\user\Entity\User;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Drupal\auth0\Event\Auth0UserSigninEvent;
+use Drupal\auth0\Event\Auth0UserSignupEvent;
 
 use Auth0SDK\Auth0;
 
@@ -18,6 +26,12 @@ use Auth0SDK\Auth0;
  * Controller routines for auth0 routes.
  */
 class AuthController extends ControllerBase {
+
+  protected $eventDispatcher;
+
+  public function __construct() {
+    $this->eventDispatcher = \Drupal::service('event_dispatcher');;
+  }
 
   /**
    * Handles the login page override
@@ -108,6 +122,10 @@ class AuthController extends ControllerBase {
         $this->auth0_update_auth0_object($userInfo);
 
         user_login_finalize($user);
+
+        $event = new Auth0UserSigninEvent($user, $userInfo);
+        $this->eventDispatcher->dispatch($event->event_name, $event);
+
     } else {
         // If the user doesn't exist we need to either create a new one, or assign him to an existing one
        // If the user doesn't exist we need to either create a new one, or assign him to an existing one
@@ -142,7 +160,8 @@ class AuthController extends ControllerBase {
 
         user_login_finalize($user);
 
-        // A destination was set, probably on an exception controller,
+        $event = new Auth0UserSignupEvent($user, $userInfo);
+        $this->eventDispatcher->dispatch($event->event_name, $event);
     }
 
     if ($request->request->has('destination')) {
