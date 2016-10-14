@@ -4,7 +4,9 @@ namespace Drupal\auth0\Event;
 use Symfony\Component\EventDispatcher\Event;
 
 class Auth0UserSignupEvent extends Event {
-  public $event_name = 'auth0.signup';
+  
+  const NAME = 'auth0.signup';
+
   protected $user;
   protected $auth0Profile;
 

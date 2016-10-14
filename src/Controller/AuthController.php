@@ -124,7 +124,7 @@ class AuthController extends ControllerBase {
         user_login_finalize($user);
 
         $event = new Auth0UserSigninEvent($user, $userInfo);
-        $this->eventDispatcher->dispatch($event->event_name, $event);
+        $this->eventDispatcher->dispatch(Auth0UserSigninEvent::NAME, $event);
 
     } else {
         // If the user doesn't exist we need to either create a new one, or assign him to an existing one
@@ -161,7 +161,7 @@ class AuthController extends ControllerBase {
         user_login_finalize($user);
 
         $event = new Auth0UserSignupEvent($user, $userInfo);
-        $this->eventDispatcher->dispatch($event->event_name, $event);
+        $this->eventDispatcher->dispatch(Auth0UserSignupEvent::NAME, $event);
     }
 
     if ($request->request->has('destination')) {
