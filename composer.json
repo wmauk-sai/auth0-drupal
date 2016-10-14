@@ -1,5 +1,8 @@
 {
     "name": "auth0/auth0_drupal",
+    "type": "drupal-module",
+    "license": "MIT",
+    "description": "Single Sign On for Enterprises + Social Login + User/Passwords. For all your Drupal instances. Powered by Auth0.",
     "require": {
         "auth0/auth0-php": "0.6.8",
         "adoy/oauth2": "dev-master",
@@ -7,7 +10,8 @@
     },
     "authors": [
         {
-            "name": "Auth0"
+            "name": "German Lena",
+            "email": "german@auth0.com"
         }
     ]
 }
