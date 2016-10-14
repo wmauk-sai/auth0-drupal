@@ -81,14 +81,14 @@ class AuthController extends ControllerBase {
     try {
       $userInfo = $auth0->getUserInfo();
       $idToken = $auth0->getIdToken();
-    } 
+    }
     catch (\Exception $e) {
 
     }
 
     if ($userInfo) {
       return $this->processUserLogin($request, $userInfo, $idToken);
-    } 
+    }
     else {
       drupal_set_message(t('There was a problem logging you in, sorry by the inconvenience.'), 'error');
 
@@ -96,7 +96,9 @@ class AuthController extends ControllerBase {
     }
   }
 
-  // Checks if the email is valid.
+  /**
+   * Checks if the email is valid.
+   */
   protected function validateUserEmail($userInfo) {
     $config = \Drupal::service('config.factory')->get('auth0.settings');
     $requires_email = $config->get('auth0_requires_verified_email');
@@ -106,23 +108,26 @@ class AuthController extends ControllerBase {
         throw new EmailNotSetException();
       }
       if (!$userInfo['email_verified']) {
-        throw new EmailNotVerifiedException(); 
+        throw new EmailNotVerifiedException();
       }
     }
   }
 
-  // Process the auth0 user profile and signin or signup the user.
+  /**
+   * Process the auth0 user profile and signin or signup the user.
+   */
   protected function processUserLogin(Request $request, $userInfo, $idToken) {
-    
     try {
       $this->validateUserEmail($userInfo);
-    } catch(EmailNotSetException $e) {
+    }
+    catch (EmailNotSetException $e) {
       drupal_set_message(
           t('This account does not have an email associated. Please login with a different provider.'),
           'error'
       );
       return new RedirectResponse('/');
-    } catch(EmailNotVerifiedException $e) {
+    }
+    catch (EmailNotVerifiedException $e) {
       return $this->auth0FailWithVerifyEmail($idToken);
     }
 
@@ -136,11 +141,12 @@ class AuthController extends ControllerBase {
 
       $event = new Auth0UserSigninEvent($user, $userInfo);
       $this->eventDispatcher->dispatch(Auth0UserSigninEvent::NAME, $event);
-    } 
+    }
     else {
       try {
         $user = $this->signupUser($userInfo);
-      } catch(EmailNotVerifiedException $e) {
+      }
+      catch (EmailNotVerifiedException $e) {
         return $this->auth0FailWithVerifyEmail($idToken);
       }
 
@@ -159,13 +165,15 @@ class AuthController extends ControllerBase {
     return $this->redirect('entity.user.canonical', array('user' => $user->id()));
   }
 
-  // Create or link a new user based on the auth0 profile.
+  /**
+   * Create or link a new user based on the auth0 profile.
+   */
   protected function signupUser($userInfo) {
     // If the user doesn't exist we need to either create a new one, or assign him to an existing one.
     $isDatabaseUser = FALSE;
     foreach ($userInfo['identities'] as $identity) {
       if ($identity['provider'] == "auth0") {
-          $isDatabaseUser = TRUE;
+        $isDatabaseUser = TRUE;
       }
     }
     $joinUser = FALSE;
@@ -179,13 +187,13 @@ class AuthController extends ControllerBase {
 
     if ($joinUser) {
       // If we are here, we have a potential join user.
-      // Don't allow creation or assignation of user if the email is not verified, 
+      // Don't allow creation or assignation of user if the email is not verified,
       // that would be hijacking.
       if (!$userInfo['email_verified']) {
         throw new EmailNotVerifiedException();
       }
       $user = $joinUser;
-    } 
+    }
     else {
       // If we are here, we need to create the user.
       $user = $this->createDrupalUser($userInfo);
@@ -194,7 +202,9 @@ class AuthController extends ControllerBase {
     return $user;
   }
 
-  // Email not verified error message.
+  /**
+   * Email not verified error message.
+   */
   protected function auth0FailWithVerifyEmail($idToken) {
 
     $url = Url::fromRoute('auth0.verify_email', array(), array("query" => array('token' => $idToken)));
@@ -209,7 +219,9 @@ class AuthController extends ControllerBase {
     return new RedirectResponse('/');
   }
 
-  // Get the auth0 user profile.
+  /**
+   * Get the auth0 user profile.
+   */
   protected function findAuth0User($id) {
     $auth0_user = db_select('auth0_user', 'a')
         ->fields('a', array('drupal_id'))
@@ -220,7 +232,9 @@ class AuthController extends ControllerBase {
     return empty($auth0_user) ? FALSE : User::load($auth0_user['drupal_id']);
   }
 
-  // Update the auth0 user profile.
+  /**
+   * Update the auth0 user profile.
+   */
   protected function updateAuth0User($userInfo) {
     db_update('auth0_user')
         ->fields(array(
@@ -230,7 +244,9 @@ class AuthController extends ControllerBase {
         ->execute();
   }
 
-  // Insert the auth0 user
+  /**
+   * Insert the auth0 user.
+   */
   protected function insertAuth0User($userInfo, $uid) {
 
     db_insert('auth0_user')->fields(array(
@@ -241,7 +257,9 @@ class AuthController extends ControllerBase {
 
   }
 
-  // Create the Drupal user based on the Auth0 user profile
+  /**
+   * Create the Drupal user based on the Auth0 user profile.
+   */
   protected function createDrupalUser($userInfo) {
 
     $user = User::create();
@@ -251,9 +269,9 @@ class AuthController extends ControllerBase {
 
     if (isset($userInfo['email']) && !empty($userInfo['email'])) {
       $user->setEmail($userInfo['email']);
-    } 
+    }
     else {
-      $user->setEmail("change_this_email@" . uniqid() .".com");
+      $user->setEmail("change_this_email@" . uniqid() . ".com");
     }
 
     // If the username already exists, create a new random one.
@@ -269,6 +287,9 @@ class AuthController extends ControllerBase {
     return $user;
   }
 
+  /**
+   * Send the verification email.
+   */
   public function verify_email(Request $request) {
     $token = $request->get('token');
 
@@ -292,7 +313,7 @@ class AuthController extends ControllerBase {
       );
 
       drupal_set_message(t('An Authorization email was sent to your account'));
-    } 
+    }
     catch (\UnexpectedValueException $e) {
       drupal_set_message(t('Your session has expired.'), 'error');
     }
@@ -302,4 +323,5 @@ class AuthController extends ControllerBase {
 
     return new RedirectResponse('/');
   }
+
 }

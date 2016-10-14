@@ -42,8 +42,8 @@ function auth0_schema() {
  * Implements hook_install().
  */
 function auth0_install() {
-    drupal_install_schema('auth0_user_services');
-    $css = "
+  drupal_install_schema('auth0_user_services');
+  $css = "
 #a0-widget .a0-panel {
     min-width: 90%;
     padding: 5%;
@@ -55,14 +55,14 @@ function auth0_install() {
     border-color: #f9f9f9;
 }";
 
-    $config = \Drupal::service('config.factory')->getEditable('auth0.settings');
-    $config->set('auth0_login_css', $css)
-            ->set('auth0_widget_cdn', 'https://cdn.auth0.com/js/lock/10.2/lock.min.js')
-            ->set('auth0_form_title', 'Sign In')
-            ->set('auth0_requires_verified_email', true)
-            ->set('auth0_allow_signup', true)
-            ->set('auth0_lock_extra_settings', '')
-            ->save();
+  $config = \Drupal::service('config.factory')->getEditable('auth0.settings');
+  $config->set('auth0_login_css', $css)
+          ->set('auth0_widget_cdn', 'https://cdn.auth0.com/js/lock/10.2/lock.min.js')
+          ->set('auth0_form_title', 'Sign In')
+          ->set('auth0_requires_verified_email', TRUE)
+          ->set('auth0_allow_signup', TRUE)
+          ->set('auth0_lock_extra_settings', '')
+          ->save();
 }
 
 /**
@@ -78,4 +78,3 @@ function auth0_uninstall() {
   variable_del('auth0_client_id');
   variable_del('auth0_client_secret');
 }
-

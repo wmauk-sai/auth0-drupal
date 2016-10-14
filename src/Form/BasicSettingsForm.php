@@ -1,14 +1,17 @@
 <?php
+namespace Drupal\auth0\Form;
+
 /**
  * @file
  * Contains \Drupal\auth0\Form\BasicSettingsForm.
  */
 
-namespace Drupal\auth0\Form;
-
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 
+/**
+ * This forms handles the basic module configurations.
+ */
 class BasicSettingsForm extends FormBase {
 
   /**
@@ -26,25 +29,25 @@ class BasicSettingsForm extends FormBase {
     $config = \Drupal::service('config.factory')->get('auth0.settings');
 
     $form['auth0_client_id'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Client id'),
-        '#default_value' => $config->get('auth0_client_id', ''),
-        '#description' => t('Application id, copy from the auth0 dashboard.'),
-        '#required' => TRUE,
+      '#type' => 'textfield',
+      '#title' => t('Client id'),
+      '#default_value' => $config->get('auth0_client_id', ''),
+      '#description' => t('Application id, copy from the auth0 dashboard.'),
+      '#required' => TRUE,
     );
     $form['auth0_client_secret'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Client secret'),
-        '#default_value' => $config->get('auth0_client_secret', ''),
-        '#description' => t('Application secret, copy from the auth0 dashboard.'),
-        '#required' => TRUE,
+      '#type' => 'textfield',
+      '#title' => t('Client secret'),
+      '#default_value' => $config->get('auth0_client_secret', ''),
+      '#description' => t('Application secret, copy from the auth0 dashboard.'),
+      '#required' => TRUE,
     );
     $form['auth0_domain'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Domain'),
-        '#default_value' => $config->get('auth0_domain', ''),
-        '#description' => t('Your Auth0 domain, you can see it in the auth0 dashboard.'),
-        '#required' => TRUE,
+      '#type' => 'textfield',
+      '#title' => t('Domain'),
+      '#default_value' => $config->get('auth0_domain', ''),
+      '#description' => t('Your Auth0 domain, you can see it in the auth0 dashboard.'),
+      '#required' => TRUE,
     );
 
     $form['actions']['#type'] = 'actions';
