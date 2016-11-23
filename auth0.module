@@ -839,7 +839,7 @@ function template_preprocess_auth0_lock(&$vars) {
     'redirect_uri' => $vars['params']['callbackURL'],
     'client_id' => $vars['client_id'],
     'response_type' => 'code',
-    'state' => $vars['params']['authParams']['state']
+    'state' => isset($vars['params']['authParams']) ? $vars['params']['authParams']['state'] : ''
     );
   $vars['login_link'] = l(t('Log in'), 'https://' . $vars['domain'] . '/authorize', array('query' => $query));
 
