@@ -43,6 +43,15 @@ class AuthController extends ControllerBase {
 
   protected $eventDispatcher;
 
+  protected $eventDispatcher;
+
+  /**
+   * Inicialize the controller.
+   */
+  public function __construct() {
+    $this->eventDispatcher = \Drupal::service('event_dispatcher');;
+  }
+
   /**
    * Inicialize the controller.
    */
