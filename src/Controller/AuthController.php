@@ -1,7 +1,17 @@
 <?php
+/**
+ * @file
+ * Contains \Drupal\auth0\Controller\AuthController.
+ */
 
 namespace Drupal\auth0\Controller;
 
+// Create a variable to store the path to this module and load vendor files if they exist
+define('AUTH0_PATH', drupal_get_path('module', 'auth0'));
+function_exists('dd') && dd(AUTH0_PATH, 'AUTH0_PATH');
+if (file_exists(AUTH0_PATH . '/vendor/autoload.php')) {
+  require_once (AUTH0_PATH . '/vendor/autoload.php');
+}
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Url;
@@ -311,9 +321,12 @@ class AuthController extends ControllerBase {
     }
 
     // See if there is a user in the auth0_user table with the user info client id.
+    function_exists('dd') && dd($userInfo['user_id'], 'looking up drupal user by auth0 user_id');
     $user = $this->findAuth0User($userInfo['user_id']);
 
     if ($user) {
+      function_exists('dd') && dd($user->id(), 'uid of existing drupal user found');
+
       // User exists!
       // update the auth0_user with the new userInfo object.
       $this->updateAuth0User($userInfo);
@@ -325,6 +338,8 @@ class AuthController extends ControllerBase {
       $this->eventDispatcher->dispatch(Auth0UserSigninEvent::NAME, $event);
     }
     else {
+      function_exists('dd') && dd('existing drupal user NOT found');
+
       try {
         $user = $this->signupUser($userInfo, $idToken);
       }
@@ -395,8 +410,11 @@ class AuthController extends ControllerBase {
         $user = $joinUser;
       }
     else {
+      function_exists('dd') && dd('creating new drupal user from auth0 user');
+      
       // If we are here, we need to create the user.
       $user = $this->createDrupalUser($userInfo);
+      
       // Update field and role mappings
       $this->auth0_update_fields_and_roles($userInfo, $user);
     }
@@ -690,4 +708,5 @@ class AuthController extends ControllerBase {
 
     return new RedirectResponse('/');
   }
+
 }
