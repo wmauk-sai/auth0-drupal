@@ -27,6 +27,7 @@ class Auth0UserSigninEvent extends Event {
    */
   public function __construct($user, $auth0Profile) {
     $this->user = $user;
+    $this->auth0Profile = $auth0Profile;
   }
 
   /**
