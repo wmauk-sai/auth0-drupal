@@ -392,23 +392,25 @@ class AuthController extends ControllerBase {
         $isDatabaseUser = TRUE;
       }
     }
-      $joinUser = false;
-      // If the user has a verified email or is a database user try to see if there is
-      // a user to join with. The isDatabase is because we don't want to allow database
+    $joinUser = false;
+    // If the user has a verified email or is a database user try to see if there is
+    // a user to join with. The isDatabase is because we don't want to allow database
     // user creation if there is an existing one with no verified email.
-      if ($userInfo['email_verified'] || $isDatabaseUser) {
-        $joinUser = user_load_by_mail($userInfo['email']);
-      }
+    if ($userInfo['email_verified'] || $isDatabaseUser) {
+      $joinUser = user_load_by_mail($userInfo['email']);
+    } else if (!empty($user_info['email_verified']) || $isDatabaseUser) {
+      $joinUser = user_load_by_name($user_info['preferred_username']);
+    }
 
-      if ($joinUser) {
+    if ($joinUser) {
       // If we are here, we have a potential join user.
       // Don't allow creation or assignation of user if the email is not verified,
       // that would be hijacking.
-        if (!$userInfo['email_verified']) {
-        throw new EmailNotVerifiedException();
-        }
-        $user = $joinUser;
+      if (!$userInfo['email_verified']) {
+      throw new EmailNotVerifiedException();
       }
+      $user = $joinUser;
+    }
     else {
       function_exists('dd') && dd('creating new drupal user from auth0 user');
 
@@ -420,7 +422,7 @@ class AuthController extends ControllerBase {
     }
 
     return $user;
-    }
+  }
 
   /**
    * Email not verified error message.
@@ -647,7 +649,7 @@ class AuthController extends ControllerBase {
     }
 
     // If the username already exists, create a new random one.
-    $username = $userInfo['nickname'];
+    $username = $userInfo['preferred_username'];
     if (user_load_by_name($username)) {
       $username .= time();
     }
