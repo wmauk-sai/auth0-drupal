@@ -324,7 +324,7 @@ class AuthController extends ControllerBase {
     }
 
     // See if there is a user in the auth0_user table with the user info client id.
-    function_exists('dd') && dd($userInfo['user_id'], 'looking up drupal user by auth0 user_id');
+    \Drupal::logger('auth0')->notice($userInfo['user_id'] . ' looking up drupal user by auth0 user_id');
     $user = $this->findAuth0User($userInfo['user_id']);
 
     if ($user) {
