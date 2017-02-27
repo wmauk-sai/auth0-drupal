@@ -282,6 +282,7 @@ class AuthController extends ControllerBase {
     }
 
     if ($userInfo) {
+    	\Drupal::logger('auth0')->notice('Good Login');
       return $this->processUserLogin($request, $userInfo, $idToken);
     }
     else {
