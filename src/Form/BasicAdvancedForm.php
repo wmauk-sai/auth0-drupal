@@ -42,6 +42,13 @@ class BasicAdvancedForm extends FormBase {
         '#description' => t('If you have database connection you can allow users to signup in the widget.')
     );
 
+    $form['auth0_redirect_for_sso'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Redirect login for SSO'),
+        '#default_value' => $config->get('auth0_redirect_for_sso'),
+        '#description' => t('If you are supporting SSO for your customers for other apps, including this application, click this to redirect to your Auth0 Hosted Login Page for Login and Signup')
+    );
+
     $form['auth0_widget_cdn'] = array(
         '#type' => 'textfield',
         '#title' => t('Widget CDN'),
@@ -95,6 +102,7 @@ class BasicAdvancedForm extends FormBase {
     $config = \Drupal::service('config.factory')->getEditable('auth0.settings');
     $config->set('auth0_form_title', $form_state->getValue('auth0_form_title'))
             ->set('auth0_allow_signup', $form_state->getValue('auth0_allow_signup'))
+            ->set('auth0_redirect_for_sso', $form_state->getValue('auth0_redirect_for_sso'))
             ->set('auth0_widget_cdn', $form_state->getValue('auth0_widget_cdn'))
             ->set('auth0_requires_verified_email', $form_state->getValue('auth0_requires_verified_email'))
             ->set('auth0_login_css', $form_state->getValue('auth0_login_css'))

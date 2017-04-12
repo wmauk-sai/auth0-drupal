@@ -37,7 +37,8 @@ AUTH0 CONFIGURATION
 2. Create a new PHP application.
 3. On App Callbacks URLs add a url like this `http://<yoursite>/auth0/callback`
 4. Open "API Access" tab.
-5. Keep notice of your domain, client id and client secret
+5. Keep notice of your domain, client id and client secret (note whether the client secret is base64 encoded or not).  RECOMMENDED: Go to your client's advanced settings and select RS256 and OIDC Conformant under the Oauth tab.  Please note that this requires you set Redirect login for SSO as well.
+6. If redirecting for SSO, make sure you add `http://<yoursite>` to the allowed logouts in your account settings in Auth0.
 
 MODULE CONFIGURATION
 --------------------
@@ -50,6 +51,9 @@ The title to be printed on top of the login widget
 * Allow user signup:
 This only matters if you have database users enabled, and you want that users can sign up using the
 login widget
+
+* Redirect login for SSO:
+This will redirect to your Auth0 Hosted Login Page for login, this will enable you to use SSO for this site and others in Auth0.  It will also redirect for logout, so you must add your base URL to the Allowed Logout URLs in your Account Settings for Auth0 (not your client settings).
 
 * Widget CDN:
 Changing this url you can use the latest version of the widget without updating this plugin

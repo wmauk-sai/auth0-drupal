@@ -61,6 +61,7 @@ function auth0_install() {
           ->set('auth0_form_title', 'Sign In')
           ->set('auth0_requires_verified_email', TRUE)
           ->set('auth0_allow_signup', TRUE)
+          ->set('auth0_redirect_for_sso', FALSE)
           ->set('auth0_lock_extra_settings', '')
           ->save();
 }
@@ -74,6 +75,7 @@ function auth0_uninstall() {
   variable_del('auth0_form_title');
   variable_del('auth0_requires_verified_email');
   variable_del('auth0_allow_signup');
+  variable_del('auth0_redirect_for_sso');
   variable_del('auth0_domain');
   variable_del('auth0_client_id');
   variable_del('auth0_client_secret');
