@@ -47,6 +47,9 @@ class AuthController extends ControllerBase {
    * Inicialize the controller.
    */
   public function __construct(PrivateTempStoreFactory $tempStoreFactory, SessionManagerInterface $sessionManager) {
+    // Ensure the pages this controller servers never gets cached
+    \Drupal::service('page_cache_kill_switch')->trigger();
+
     $this->eventDispatcher = \Drupal::service('event_dispatcher');
     $this->tempStore = $tempStoreFactory->get(AuthController::SESSION);
     $this->sessionManager = $sessionManager;
