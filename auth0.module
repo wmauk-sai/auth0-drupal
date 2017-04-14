@@ -116,7 +116,7 @@ function auth0_verify_email_page() {
     return drupal_goto();
   }
 
-  $token = $_REQUEST['token'];
+  $token = $_REQUEST['idToken'];
   /**
     * Validate the ID Token
     */
@@ -265,8 +265,19 @@ function auth0_callback() {
 /**
  * Display a message and cancel login if the user does not have a verified email.
  */
-function auth0_fail_with_verify_email($id_token) {
-  drupal_set_message(t('Please verify your e-mail address and log in again. <a href="@url">Resend verification e-mail.</a>', array('@url' => url('auth0/verify_email', array('query' => array('token' => $id_token))))), 'warning');
+function auth0_fail_with_verify_email($idToken) {
+  $url = url('auth0/verify_email', array());
+  $formText = "<form style='display:none' name='auth0VerifyEmail' action=@url method='post'><input type='hidden' value=@token name='idToken'/></form>";
+  $linkText = "<a href='javascript:null' onClick='document.forms[\"auth0VerifyEmail\"].submit();'>here</a>";
+
+  $message = t($formText."Please verify your email and log in again. Click $linkText to resend verification email.",
+    array(
+      '@url' => $url,
+      '@token' => $idToken
+    )
+  );
+
+  drupal_set_message($message, 'warning');
 
   return drupal_goto();
 }
