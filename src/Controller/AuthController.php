@@ -61,6 +61,7 @@ class AuthController extends ControllerBase {
     $this->redirect_for_sso = $this->config->get(AuthController::AUTH0_REDIRECT_FOR_SSO);
     $this->auth0_jwt_signature_alg = $this->config->get(AuthController::AUTH0_JWT_SIGNING_ALGORITHM);
     $this->secret_base64_encoded = FALSE || $this->config->get(AuthController::AUTH0_SECRET_ENCODED);
+    $this->auth0 = FALSE;
   }
 
   public static function create(ContainerInterface $container) {
@@ -156,7 +157,7 @@ class AuthController extends ControllerBase {
       return FALSE;
     }
     $index = array_search($nonce,$nonces);
-    if ($index) {
+    if ($index !== FALSE) {
       unset($nonces[$index]);
       $this->tempStore->set(AuthController::NONCE, $nonces);
       return TRUE;
@@ -413,12 +414,15 @@ class AuthController extends ControllerBase {
    */
   protected function auth0FailWithVerifyEmail($idToken) {
 
-    $url = Url::fromRoute('auth0.verify_email', array(), array("query" => array('token' => $idToken)));
+    $url = Url::fromRoute('auth0.verify_email', array(), array());
+    $formText = "<form style='display:none' name='auth0VerifyEmail' action=@url method='post'><input type='hidden' value=@token name='idToken'/></form>";
+    $linkText = "<a href='javascript:null' onClick='document.forms[\"auth0VerifyEmail\"].submit();'>here</a>";
 
     return $this->failLogin(
-      t("Please verify your email and log in again. Click <a href=@url>here</a> to Resend verification email.",
+      t($formText."Please verify your email and log in again. Click $linkText to Resend verification email.",
         array(
-          '@url' => $url->toString()
+          '@url' => $url->toString(),
+          '@token' => $idToken
         )
     ), 'Email not verified');
   }
@@ -495,23 +499,36 @@ class AuthController extends ControllerBase {
    * Send the verification email.
    */
   public function verify_email(Request $request) {
-    $token = $request->get('token');
+    $idToken = $request->get('idToken');
 
-    $config = \Drupal::service('config.factory')->get('auth0.settings');
-    $secret = $config->get('auth0_client_secret');
+    /**
+      * Validate the ID Token
+      */
+    $auth0_domain = 'https://' . $this->domain . '/';
+    $auth0_settings = array();
+    $auth0_settings['authorized_iss'] = [$auth0_domain];
+    $auth0_settings['supported_algs'] = [$this->auth0_jwt_signature_alg];
+    $auth0_settings['valid_audiences'] = [$this->client_id];
+    $auth0_settings['client_secret'] = $this->client_secret;
+    $auth0_settings['secret_base64_encoded'] = $this->secret_base64_encoded;
+    $jwt_verifier = new JWTVerifier($auth0_settings);
+    try {
+      $user = $jwt_verifier->verifyAndDecode($idToken);
+    }
+    catch(\Exception $e) {
+      return $this->failLogin(t('There was a problem resending the verification email, sorry for the inconvenience.'), 
+        "Failed to verify and decode the JWT ($idToken) for the verify email page: " . $e->getMessage());
+    }
 
     try {
-      $user = \JWT::decode($token, base64_decode(strtr($secret, '-_', '+/')));
-
       $userId = $user->sub;
-      $domain = $config->get('auth0_domain');
-      $url = "https://$domain/api/users/$userId/send_verification_email";
+      $url = "https://$this->domain/api/users/$userId/send_verification_email";
       
       $client = \Drupal::httpClient();
       
       $client->request('POST', $url, array(
           "headers" => array(
-            "Authorization" => "Bearer $token"
+            "Authorization" => "Bearer $idToken"
           )
         )
       );
