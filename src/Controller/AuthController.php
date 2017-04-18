@@ -465,6 +465,20 @@ class AuthController extends ControllerBase {
 
   }
 
+  private function getRandomBytes($nbBytes = 32) {
+    $bytes = openssl_random_pseudo_bytes($nbBytes, $strong);
+    if (false !== $bytes && true === $strong) {
+        return $bytes;
+    }
+    else {
+        throw new \Exception("Unable to generate secure token from OpenSSL.");
+    }
+  }
+
+  private function generatePassword($length){
+    return substr(preg_replace("/[^a-zA-Z0-9]\+\//", "", base64_encode($this->getRandomBytes($length+1))),0,$length);
+  }
+
   /**
    * Create the Drupal user based on the Auth0 user profile.
    */
@@ -472,7 +486,7 @@ class AuthController extends ControllerBase {
 
     $user = User::create();
 
-    $user->setPassword(uniqid('auth0', TRUE));
+    $user->setPassword($this->generatePassword(16));
     $user->enforceIsNew();
 
     if (isset($userInfo['email']) && !empty($userInfo['email'])) {
