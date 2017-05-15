@@ -98,7 +98,7 @@ class AuthController extends ControllerBase {
       '#theme' => 'auth0_login',
       '#domain' => $config->get('auth0_domain'),
       '#clientID' => $config->get('auth0_client_id'),
-      '#state' => NULL,
+      '#state' => $this->getNonce(),
       '#showSignup' => $config->get('auth0_allow_signup'),
       '#widgetCdn' => $config->get('auth0_widget_cdn'),
       '#loginCSS' => $config->get('auth0_login_css'),
@@ -113,17 +113,12 @@ class AuthController extends ControllerBase {
   public function logout() {
     global $base_root;
 
-    // if we are using SSO, we need to logout completely from Auth0, otherwise they will just get redirected back in when the click login
-    if ($this->redirect_for_sso) {
-      $auth0Api = new Authentication($this->domain, $this->client_id);
-
-      user_logout();
-     
-      return new TrustedRedirectResponse($auth0Api->get_logout_link($base_root));
-    }
+    $auth0Api = new Authentication($this->domain, $this->client_id);
 
     user_logout();
-    return $this->redirect('<front>');
+    
+    // if we are using SSO, we need to logout completely from Auth0, otherwise they will just logout of their client
+    return new TrustedRedirectResponse($auth0Api->get_logout_link($base_root, $this->redirect_for_sso ? null : $this->client_id));
   }
 
   /**
@@ -253,18 +248,16 @@ class AuthController extends ControllerBase {
     /**
      * Validate the state if we redirected for login
      */
-    if ($this->redirect_for_sso) {
-      $state = 'invalid';
-      if ($request->query->has('state')) {
-        $state = $request->query->get('state');
-      } elseif ($request->request->has('state')) {
-        $state = $request->request->get('state');
-      }
+    $state = 'invalid';
+    if ($request->query->has('state')) {
+      $state = $request->query->get('state');
+    } elseif ($request->request->has('state')) {
+      $state = $request->request->get('state');
+    }
 
-      if (!$this->compareNonce($state)) {
-        return $this->failLogin(t('There was a problem logging you in, sorry for the inconvenience.'),
-          "Failed to verify the state ($state)");
-      }
+    if (!$this->compareNonce($state)) {
+      return $this->failLogin(t('There was a problem logging you in, sorry for the inconvenience.'),
+        "Failed to verify the state ($state)");
     }
 
     /**
