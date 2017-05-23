@@ -25,6 +25,13 @@ auth0.callback:
   requirements:
     _access: 'TRUE'
 
+auth0.logout:
+  path: '/user/logout'
+  defaults:
+    _controller: '\Drupal\auth0\Controller\AuthController::logout'
+  requirements:
+    _access: 'TRUE'
+
 auth0.verify_email:
   path: '/auth0/verify_email'
   defaults:
