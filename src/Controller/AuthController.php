@@ -199,8 +199,6 @@ class AuthController extends ControllerBase {
     global $base_root;
 
     $config = \Drupal::service('config.factory')->get('auth0.settings');
-    
-    \Drupal::logger('auth0')->notice('auth0 config' . $config);
 
     /* Check for errors */
     // Check in query
