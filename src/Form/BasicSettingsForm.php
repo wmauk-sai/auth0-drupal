@@ -1,6 +1,5 @@
 <?php
 namespace Drupal\auth0\Form;
-
 /**
  * @file
  * Contains \Drupal\auth0\Form\BasicSettingsForm.
