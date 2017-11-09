@@ -34,6 +34,7 @@ use Auth0\SDK\JWTVerifier;
 use Auth0\SDK\Auth0;
 use Auth0\SDK\API\Authentication;
 use Auth0\SDK\API\Management;
+use Drupal\auth0\Util;
 
 use RandomLib\Factory;
 
@@ -50,7 +51,8 @@ class AuthController extends ControllerBase {
   const AUTH0_REDIRECT_FOR_SSO = 'auth0_redirect_for_sso';
   const AUTH0_JWT_SIGNING_ALGORITHM = 'auth0_jwt_signature_alg';
   const AUTH0_SECRET_ENCODED = 'auth0_secret_base64_encoded';
-
+  const AUTH0_OFFLINE_ACCESS = 'auth0_allow_offline_access';
+  
   protected $eventDispatcher;
 
   /**
@@ -71,6 +73,8 @@ class AuthController extends ControllerBase {
     $this->redirect_for_sso = $this->config->get(AuthController::AUTH0_REDIRECT_FOR_SSO);
     $this->auth0_jwt_signature_alg = $this->config->get(AuthController::AUTH0_JWT_SIGNING_ALGORITHM);
     $this->secret_base64_encoded = FALSE || $this->config->get(AuthController::AUTH0_SECRET_ENCODED);
+    $this->offlineAccess = FALSE || $this->config->get(AuthController::AUTH0_OFFLINE_ACCESS);
+    $this->helper = new \Drupal\auth0\Util\AuthHelper();
     $this->auth0 = FALSE;
   }
 
@@ -110,6 +114,7 @@ class AuthController extends ControllerBase {
       '#clientID' => $config->get('auth0_client_id'),
       '#state' => $this->getNonce(),
       '#showSignup' => $config->get('auth0_allow_signup'),
+      '#offlineAccess' => $this->offlineAccess,
       '#widgetCdn' => $config->get('auth0_widget_cdn'),
       '#loginCSS' => $config->get('auth0_login_css'),
       '#lockExtraSettings' => $lockExtraSettings,
@@ -187,6 +192,7 @@ class AuthController extends ControllerBase {
     $state = $this->getNonce();
     $additional_params = [];
     $additional_params['scope'] = 'openid profile email nickname';
+    if ($this->offlineAccess) $additional_params['scope'] .= ' offline_access';
     if ($prompt) $additional_params['prompt'] = $prompt;
 
     return $auth0Api->get_authorize_link($response_type, $redirect_uri, $connection, $state, $additional_params);
@@ -197,8 +203,6 @@ class AuthController extends ControllerBase {
    */
   public function callback(Request $request) {
     global $base_root;
-
-    $config = \Drupal::service('config.factory')->get('auth0.settings');
 
     /* Check for errors */
     // Check in query
@@ -211,9 +215,9 @@ class AuthController extends ControllerBase {
     }
 
     $this->auth0 = new Auth0(array(
-        'domain'        => $config->get('auth0_domain'),
-        'client_id'     => $config->get('auth0_client_id'),
-        'client_secret' => $config->get('auth0_client_secret'),
+        'domain'        => $this->domain,
+        'client_id'     => $this->client_id,
+        'client_secret' => $this->client_secret,
         'redirect_uri'  => "$base_root/auth0/callback",
         'store' => NULL, // Set to null so that the store is set to SessionStore.
         'persist_id_token' => FALSE,
@@ -223,6 +227,7 @@ class AuthController extends ControllerBase {
         ));
 
     $userInfo = null;
+    $refreshToken = null;
 
     /**
      * Exchange the code for the tokens (happens behind the scenes in the SDK)
@@ -236,19 +241,18 @@ class AuthController extends ControllerBase {
         'Failed to exchange code for tokens: ' . $e->getMessage());
     }
 
-    /**
-     * Validate the ID Token
-     */
-    $auth0_domain = 'https://' . $this->domain . '/';
-    $auth0_settings = array();
-    $auth0_settings['authorized_iss'] = [$auth0_domain];
-    $auth0_settings['supported_algs'] = [$this->auth0_jwt_signature_alg];
-    $auth0_settings['valid_audiences'] = [$this->client_id];
-    $auth0_settings['client_secret'] = $this->client_secret;
-    $auth0_settings['secret_base64_encoded'] = $this->secret_base64_encoded;
-    $jwt_verifier = new JWTVerifier($auth0_settings);
+    if ($this->offlineAccess) {
+      try {
+        $refreshToken = $this->auth0->getRefreshToken();
+      }
+      catch (\Exception $e) {
+        // Do NOT fail here, just log the error
+        \Drupal::logger('auth0')->warn('Failed getting refresh token because: ' . $e->getMessage());
+      }
+    }
+
     try {
-      $user = $jwt_verifier->verifyAndDecode($idToken);
+      $user = $this->helper->validateIdToken($idToken);
     }
     catch(\Exception $e) {
       return $this->failLogin(t('There was a problem logging you in, sorry for the inconvenience.'), 
@@ -282,7 +286,7 @@ class AuthController extends ControllerBase {
 
     if ($userInfo) {
     	\Drupal::logger('auth0')->notice('Good Login');
-      return $this->processUserLogin($request, $userInfo, $idToken);
+      return $this->processUserLogin($request, $userInfo, $idToken, $refreshToken, $user->exp);
     }
     else {
       return $this->failLogin(t('There was a problem logging you in, sorry for the inconvenience.'), 
@@ -309,7 +313,7 @@ class AuthController extends ControllerBase {
   /**
    * Process the auth0 user profile and signin or signup the user.
    */
-  protected function processUserLogin(Request $request, $userInfo, $idToken) {
+  protected function processUserLogin(Request $request, $userInfo, $idToken, $refreshToken, $expiresAt) {
   	\Drupal::logger('auth0')->notice('process user login');
 
     try {
@@ -337,7 +341,7 @@ class AuthController extends ControllerBase {
       // Update field and role mappings
       $this->auth0_update_fields_and_roles($userInfo, $user);
 
-      $event = new Auth0UserSigninEvent($user, $userInfo);
+      $event = new Auth0UserSigninEvent($user, $userInfo, $refreshToken, $expiresAt);
       $this->eventDispatcher->dispatch(Auth0UserSigninEvent::NAME, $event);
     }
     else {
