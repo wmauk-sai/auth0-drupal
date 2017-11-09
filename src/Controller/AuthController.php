@@ -247,7 +247,7 @@ class AuthController extends ControllerBase {
       }
       catch (\Exception $e) {
         // Do NOT fail here, just log the error
-        \Drupal::logger('auth0')->warn('Failed getting refresh token because: ' . $e->getMessage());
+        \Drupal::logger('auth0')->warning('Failed getting refresh token because: ' . $e->getMessage());
       }
     }
 
