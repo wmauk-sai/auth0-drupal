@@ -43,7 +43,7 @@ use RandomLib\Factory;
  */
 class AuthController extends ControllerBase {
   const SESSION = 'auth0';
-  const NONCE = 'nonce';
+  const STATE = 'state';
   const AUTH0_LOGGER = 'auth0_controller';
   const AUTH0_DOMAIN = 'auth0_domain';
   const AUTH0_CLIENT_ID = 'auth0_client_id';
@@ -88,7 +88,7 @@ class AuthController extends ControllerBase {
   /**
    * Handles the login page override.
    */
-  public function login() {
+  public function login(Request $request) {
     global $base_root;
 
     $config = \Drupal::service('config.factory')->get('auth0.settings');
@@ -103,8 +103,15 @@ class AuthController extends ControllerBase {
      * If supporting SSO, redirect to the hosted login page for authorization 
      */
     if ($this->redirect_for_sso == TRUE) {
+      $returnTo = null;
+      if ($request->request->has('returnTo')) {
+        $returnTo = $request->request->get('returnTo');
+      } elseif($request->query->has('returnTo')) {
+        $returnTo = $request->query->get('returnTo');
+      }
+  
       $prompt = 'none';
-      return new TrustedRedirectResponse($this->buildAuthorizeUrl($prompt));
+      return new TrustedRedirectResponse($this->buildAuthorizeUrl($prompt, $returnTo));
     }
 
     /* Not doing SSO, so show login page */
@@ -139,7 +146,7 @@ class AuthController extends ControllerBase {
   /**
    * Create a new nonce in session and return it
    */
-  protected function getNonce() {
+  protected function getNonce($returnTo) {
     // Have to start the session after putting something into the session, or we don't actually start it!
     if (!$this->sessionManager->isStarted() && !isset($_SESSION['auth0_is_session_started'])) {
       $_SESSION['auth0_is_session_started'] = 'yes';
@@ -148,40 +155,42 @@ class AuthController extends ControllerBase {
 
     $factory = new Factory;
     $generator = $factory->getMediumStrengthGenerator();
-    $nonces = $this->tempStore->get(AuthController::NONCE);
-    if (!is_array($nonces)) $nonces = array();
+    $states = $this->tempStore->get(AuthController::STATE);
+    if (!is_array($states)) $states = array();
     $nonce = base64_encode($generator->generate(32));
-    $newNonceArray = array_merge($nonces, [$nonce]);
-    $this->tempStore->set(AuthController::NONCE, $newNonceArray);
-
+    $states[$nonce] = $returnTo === null ? '' : $returnTo;
+    $this->tempStore->set(AuthController::STATE, $states);
+    
     return $nonce;
   }
 
   /**
    * Do our one-time check against the nonce stored in session
    */
-  protected function compareNonce($nonce) {
-    $nonces = $this->tempStore->get(AuthController::NONCE);
-    if (!is_array($nonces)) {
+  protected function compareNonce($nonce, &$returnTo) {
+    $states = $this->tempStore->get(AuthController::STATE);
+    if (!is_array($states)) {
       $this->logger->error("Couldn't verify state because there was no nonce in storage");
       return FALSE;
     }
-    $index = array_search($nonce,$nonces);
-    if ($index !== FALSE) {
-      unset($nonces[$index]);
-      $this->tempStore->set(AuthController::NONCE, $nonces);
-      return TRUE;
+
+    if (isset($states[$nonce])) {
+      $returnTo = $states[$nonce];
+      unset($states[$nonce]);
+      $this->tempStore->set(AuthController::STATE, $states);
+      return TRUE;  
     }
 
-    $this->logger->error("$nonce not found in: ".implode(',', $nonces));
+    $this->logger->error("$nonce not found in: ".implode(',', $states));
     return FALSE;
   }
 
   /**
    * Build the Authorize url
    * @param $prompt none|login if prompt=none should be passed, false if not
+   * @param $returnTo local path|null if null, use default of /user
    */
-  protected function buildAuthorizeUrl($prompt) {
+  protected function buildAuthorizeUrl($prompt, $returnTo=null) {
     global $base_root;
 
     $auth0Api = new Authentication($this->domain, $this->client_id);
@@ -189,7 +198,7 @@ class AuthController extends ControllerBase {
     $response_type = 'code';
     $redirect_uri = "$base_root/auth0/callback";
     $connection = null;
-    $state = $this->getNonce();
+    $state = $this->getNonce($returnTo);
     $additional_params = [];
     $additional_params['scope'] = 'openid profile email nickname';
     if ($this->offlineAccess) $additional_params['scope'] .= ' offline_access';
@@ -198,21 +207,44 @@ class AuthController extends ControllerBase {
     return $auth0Api->get_authorize_link($response_type, $redirect_uri, $connection, $state, $additional_params);
   }
 
+  private function checkForError(Request $request, $returnTo) {
+    /* Check for errors */
+    // Check in query
+    if ($request->query->has('error') && $request->query->get('error') == 'login_required') {
+      return new TrustedRedirectResponse($this->buildAuthorizeUrl(FALSE, $returnTo));
+    }
+    // Check in post
+    if ($request->request->has('error') && $request->request->get('error') == 'login_required') {
+      return new TrustedRedirectResponse($this->buildAuthorizeUrl(FALSE, $returnTo));
+    }
+
+    return null;
+  }
+
   /**
    * Handles the callback for the oauth transaction.
    */
   public function callback(Request $request) {
     global $base_root;
 
-    /* Check for errors */
-    // Check in query
-    if ($request->query->has('error') && $request->query->get('error') == 'login_required') {
-      return new TrustedRedirectResponse($this->buildAuthorizeUrl(FALSE));
+    /**
+     * Validate the state if we redirected for login
+     */
+    $state = 'invalid';
+    if ($request->query->has('state')) {
+      $state = $request->query->get('state');
+    } elseif ($request->request->has('state')) {
+      $state = $request->request->get('state');
     }
-    // Check in post
-    if ($request->request->has('error') && $request->request->get('error') == 'login_required') {
-      return new TrustedRedirectResponse($this->buildAuthorizeUrl(FALSE));
+
+    $returnTo = null;
+    if (!$this->compareNonce($state, $returnTo)) {
+      return $this->failLogin(t('There was a problem logging you in, sorry for the inconvenience.'),
+        "Failed to verify the state ($state)");
     }
+
+    $response = $this->checkForError($request, $returnTo);
+    if ($response !== null) return $response;
 
     $this->auth0 = new Auth0(array(
         'domain'        => $this->domain,
@@ -259,20 +291,6 @@ class AuthController extends ControllerBase {
         'Failed to verify and decode the JWT: ' . $e->getMessage());
     }
 
-    /**
-     * Validate the state if we redirected for login
-     */
-    $state = 'invalid';
-    if ($request->query->has('state')) {
-      $state = $request->query->get('state');
-    } elseif ($request->request->has('state')) {
-      $state = $request->request->get('state');
-    }
-
-    if (!$this->compareNonce($state)) {
-      return $this->failLogin(t('There was a problem logging you in, sorry for the inconvenience.'),
-        "Failed to verify the state ($state)");
-    }
 
     /**
      * Check the sub if it exists (this will exist if you have enabled OIDC Conformant)
@@ -286,7 +304,7 @@ class AuthController extends ControllerBase {
 
     if ($userInfo) {
     	\Drupal::logger('auth0')->notice('Good Login');
-      return $this->processUserLogin($request, $userInfo, $idToken, $refreshToken, $user->exp);
+      return $this->processUserLogin($request, $userInfo, $idToken, $refreshToken, $user->exp, $returnTo);
     }
     else {
       return $this->failLogin(t('There was a problem logging you in, sorry for the inconvenience.'), 
@@ -313,7 +331,7 @@ class AuthController extends ControllerBase {
   /**
    * Process the auth0 user profile and signin or signup the user.
    */
-  protected function processUserLogin(Request $request, $userInfo, $idToken, $refreshToken, $expiresAt) {
+  protected function processUserLogin(Request $request, $userInfo, $idToken, $refreshToken, $expiresAt, $returnTo) {
   	\Drupal::logger('auth0')->notice('process user login');
 
     try {
@@ -359,10 +377,12 @@ class AuthController extends ControllerBase {
       $event = new Auth0UserSignupEvent($user, $userInfo);
       $this->eventDispatcher->dispatch(Auth0UserSignupEvent::NAME, $event);
     }
-      user_login_finalize($user);
+    user_login_finalize($user);
 
-    if ($request->request->has('destination')) {
-      return $this->redirect($request->request->get('destination'));
+    if ($returnTo !== null && strlen($returnTo) > 0 && $returnTo[0] === '/') {
+      return new RedirectResponse($returnTo);
+    } elseif ($request->request->has('destination')) {
+      return new RedirectResponse($request->request->get('destination'));
     }
 
     return $this->redirect('entity.user.canonical', array('user' => $user->id()));
