@@ -7,7 +7,6 @@
 namespace Drupal\auth0\Util;
 
 use Auth0\SDK\JWTVerifier;
-use Auth0\SDK\Auth0;
 use Auth0\SDK\API\Authentication;
 
 /**
@@ -47,20 +46,10 @@ class AuthHelper {
   public function getUserUsingRefreshToken($refreshToken) {
     global $base_root;
 
-    $auth0 = new Auth0(array(
-        'domain'        => $this->domain,
-        'client_id'     => $this->client_id,
-        'client_secret' => $this->client_secret,
-        'redirect_uri'  => "$base_root/auth0/callback",
-        'store' => NULL, // Set to null so that the store is set to SessionStore.
-        'persist_id_token' => FALSE,
-        'persist_user' => FALSE,
-        'persist_access_token' => FALSE,
-        'persist_refresh_token' => FALSE    
-    ));
-
+    $auth0Api = new Authentication($this->domain, $this->client_id, $this->client_secret);
+    
     try {
-        $tokens = $auth0->oauth_token([
+        $tokens = $auth0Api->oauth_token([
             'grant_type'    => 'refresh_token',
             'client_id'     => $this->client_id,
             'client_secret' => $this->client_secret,
