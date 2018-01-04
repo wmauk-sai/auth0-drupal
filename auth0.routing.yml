@@ -4,7 +4,7 @@ auth0.login:
     _controller: '\Drupal\auth0\Controller\AuthController::login'
     _title: 'Log in'
   requirements:
-    _user_is_logged_in: 'FALSE'
+    _access: 'TRUE'
   options:
     _maintenance_access: TRUE
 
@@ -14,7 +14,7 @@ auth0.legacy_login:
     _form: '\Drupal\user\Form\UserLoginForm'
     _title: 'Log in'
   requirements:
-    _user_is_logged_in: 'FALSE'
+    _access: 'TRUE'
   options:
     _maintenance_access: TRUE
 

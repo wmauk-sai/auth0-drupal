@@ -42,6 +42,13 @@ class BasicAdvancedForm extends FormBase {
         '#description' => t('If you have database connection you can allow users to signup in the widget.')
     );
 
+    $form['auth0_allow_offline_access'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Send a Refresh Token in the Signin Event for offline access'),
+      '#default_value' => $config->get('auth0_allow_offline_access', FALSE),
+      '#description' => t('If you need a refresh token for refreshing an expired session, set this to true, and then a refresh token will be sent in the Signin Event')
+    );
+
     $form['auth0_redirect_for_sso'] = array(
         '#type' => 'checkbox',
         '#title' => t('Redirect login for SSO'),
@@ -166,10 +173,12 @@ Drupal roles not listed above will not be changed by this module.
     $config = \Drupal::service('config.factory')->getEditable('auth0.settings');
     $config->set('auth0_form_title', $form_state->getValue('auth0_form_title'))
             ->set('auth0_allow_signup', $form_state->getValue('auth0_allow_signup'))
+            ->set('auth0_allow_offline_access', $form_state->getValue('auth0_allow_offline_access'))
             ->set('auth0_redirect_for_sso', $form_state->getValue('auth0_redirect_for_sso'))
             ->set('auth0_widget_cdn', $form_state->getValue('auth0_widget_cdn'))
             ->set('auth0_requires_verified_email', $form_state->getValue('auth0_requires_verified_email'))
             ->set('auth0_join_user_by_mail_enabled', $form_state->getValue('auth0_join_user_by_mail_enabled'))
+            ->set('auth0_username_claim', $form_state->getValue('auth0_username_claim'))
             ->set('auth0_login_css', $form_state->getValue('auth0_login_css'))
             ->set('auth0_auto_register', $form_state->getValue('auth0_auto_register'))
             ->set('auth0_lock_extra_settings', $form_state->getValue('auth0_lock_extra_settings'))

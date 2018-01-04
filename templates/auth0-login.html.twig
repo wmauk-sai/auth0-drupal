@@ -14,6 +14,12 @@
     lock_options.auth.params.scope = lock_options.auth.params.scope || 'openid email nickname';
     lock_options.auth.params.state = '{{state}}';
 
+    if ('{{ offlineAccess }}' === 'TRUE') {
+        if (lock_options.auth.params.scope.indexOf('offline_access') < 0) {
+            lock_options.auth.params.scope += ' offline_access';
+        }
+    }
+
     var lock = new Auth0Lock('{{clientID}}','{{domain}}', lock_options);
 
     lock.show();
