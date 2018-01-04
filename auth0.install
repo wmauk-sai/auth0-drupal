@@ -60,7 +60,7 @@ function auth0_install() {
           ->set('auth0_allow_signup', TRUE)
           ->set('auth0_allow_offline_access', FALSE)
           ->set('auth0_redirect_for_sso', FALSE)
-          ->set('auth0_widget_cdn', 'http://cdn.auth0.com/js/lock/10.22/lock.min.js')
+          ->set('auth0_widget_cdn', 'http://cdn.auth0.com/js/lock/11.0/lock.min.js')
           ->set('auth0_requires_verified_email', TRUE)
           ->set('auth0_join_user_by_mail_enabled', FALSE)
           ->set('auth0_username_claim', 'nickname')
