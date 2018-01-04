@@ -189,6 +189,7 @@ class AuthController extends ControllerBase {
    * Build the Authorize url
    * @param $prompt none|login if prompt=none should be passed, false if not
    * @param $returnTo local path|null if null, use default of /user
+   * @return string the URL to redirect to for authorization
    */
   protected function buildAuthorizeUrl($prompt, $returnTo=null) {
     global $base_root;

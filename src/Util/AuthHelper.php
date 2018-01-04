@@ -22,7 +22,14 @@ class AuthHelper {
   const AUTH0_SECRET_ENCODED = 'auth0_secret_base64_encoded';
   const AUTH0_OFFLINE_ACCESS = 'auth0_allow_offline_access';
   
-  protected $eventDispatcher;
+  private $logger;
+  private $config;
+  private $domain;
+  private $client_id;
+  private $client_secret;
+  private $redirect_for_sso;
+  private $auth0_jwt_signature_alg;
+  private $secret_base64_encoded;
 
   /**
    * Initialize the Helper.
@@ -36,11 +43,11 @@ class AuthHelper {
     $this->redirect_for_sso = $this->config->get(AuthHelper::AUTH0_REDIRECT_FOR_SSO);
     $this->auth0_jwt_signature_alg = $this->config->get(AuthHelper::AUTH0_JWT_SIGNING_ALGORITHM);
     $this->secret_base64_encoded = FALSE || $this->config->get(AuthHelper::AUTH0_SECRET_ENCODED);
-    $this->offlineAccess = FALSE || $this->config->get(AuthHelper::AUTH0_OFFLINE_ACCESS);
   }
 
   /**
    * @param $refreshToken the refresh token to use to get the user
+   * @return user an array of named claims from the ID token
    * @throws \Drupal::auth0::Exception::RefreshTokenFailedException
    */
   public function getUserUsingRefreshToken($refreshToken) {
@@ -65,7 +72,7 @@ class AuthHelper {
   /**
    * Validate the ID token
    * @param $idToken the ID token to validate
-   * @return user
+   * @return user an array of named claims from the ID token
    * @throws invalid token exception if the token is invalid, otherwise returns user
    */
   public function validateIdToken($idToken) {
