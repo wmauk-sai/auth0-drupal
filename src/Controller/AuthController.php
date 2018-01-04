@@ -186,7 +186,7 @@ class AuthController extends ControllerBase {
     $connection = null;
     $state = $this->getNonce();
     $additional_params = [];
-    $additional_params['scope'] = 'openid profile email';
+    $additional_params['scope'] = 'openid profile email nickname';
     if ($prompt) $additional_params['prompt'] = $prompt;
 
     return $auth0Api->get_authorize_link($response_type, $redirect_uri, $connection, $state, $additional_params);
@@ -400,6 +400,8 @@ class AuthController extends ControllerBase {
 
     $config = \Drupal::service('config.factory')->get('auth0.settings');
     $user_name_claim = $config->get('auth0_username_claim');
+    if ($user_name_claim == '') $user_name_claim = 'nickname';
+    
     if ($config->get('auth0_join_user_by_mail_enabled')) {
       \Drupal::logger('auth0')->notice($userInfo['email'] . 'join user by mail is enabled, looking up user by email');
       // If the user has a verified email or is a database user try to see if there is
@@ -638,6 +640,8 @@ class AuthController extends ControllerBase {
   protected function createDrupalUser($userInfo) {
     $config = \Drupal::service('config.factory')->get('auth0.settings');
     $user_name_claim = $config->get('auth0_username_claim');
+    if ($user_name_claim == '') $user_name_claim = 'nickname';
+    
     $user = User::create();
 
     $user->setPassword($this->generatePassword(16));
