@@ -22,7 +22,6 @@ use Drupal\Core\Routing\TrustedRedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 use Drupal\auth0\Event\Auth0UserSigninEvent;
@@ -34,9 +33,9 @@ use Auth0\SDK\JWTVerifier;
 use Auth0\SDK\Auth0;
 use Auth0\SDK\API\Authentication;
 use Auth0\SDK\API\Management;
-use Drupal\auth0\Util;
-
-use RandomLib\Factory;
+use Auth0\SDK\Exception\CoreException;
+use Auth0\SDK\API\Helpers\State\SessionStateHandler;
+use Auth0\SDK\Store\SessionStore;
 
 /**
  * Controller routines for auth0 authentication.
@@ -54,6 +53,19 @@ class AuthController extends ControllerBase {
   const AUTH0_OFFLINE_ACCESS = 'auth0_allow_offline_access';
   
   protected $eventDispatcher;
+  protected $tempStore;
+  protected $sessionManager;
+  protected $logger;
+  protected $config;
+  protected $domain;
+  protected $client_id;
+  protected $client_secret;
+  protected $redirect_for_sso;
+  protected $auth0_jwt_signature_alg;
+  protected $secret_base64_encoded;
+  protected $offlineAccess;
+  protected $helper;
+  protected $auth0;
 
   /**
    * Initialize the controller.
@@ -99,17 +111,17 @@ class AuthController extends ControllerBase {
       $lockExtraSettings = "{}";
     }
 
+    $returnTo = null;
+    if ($request->request->has('returnTo')) {
+      $returnTo = $request->request->get('returnTo');
+    } elseif($request->query->has('returnTo')) {
+      $returnTo = $request->query->get('returnTo');
+    }
+
     /** 
      * If supporting SSO, redirect to the hosted login page for authorization 
      */
     if ($this->redirect_for_sso == TRUE) {
-      $returnTo = null;
-      if ($request->request->has('returnTo')) {
-        $returnTo = $request->request->get('returnTo');
-      } elseif($request->query->has('returnTo')) {
-        $returnTo = $request->query->get('returnTo');
-      }
-  
       $prompt = 'none';
       return new TrustedRedirectResponse($this->buildAuthorizeUrl($prompt, $returnTo));
     }
@@ -119,7 +131,7 @@ class AuthController extends ControllerBase {
       '#theme' => 'auth0_login',
       '#domain' => $config->get('auth0_domain'),
       '#clientID' => $config->get('auth0_client_id'),
-      '#state' => $this->getNonce(),
+      '#state' => $this->getNonce( $returnTo ),
       '#showSignup' => $config->get('auth0_allow_signup'),
       '#offlineAccess' => $this->offlineAccess,
       '#widgetCdn' => $config->get('auth0_widget_cdn'),
@@ -153,36 +165,16 @@ class AuthController extends ControllerBase {
       $this->sessionManager->start();
     }
 
-    $factory = new Factory;
-    $generator = $factory->getMediumStrengthGenerator();
+    $sessionStateHandler = new SessionStateHandler( new SessionStore() );
     $states = $this->tempStore->get(AuthController::STATE);
-    if (!is_array($states)) $states = array();
-    $nonce = base64_encode($generator->generate(32));
+    if ( ! is_array( $states ) ) {
+      $states = array();
+    }
+    $nonce = $sessionStateHandler->issue();
     $states[$nonce] = $returnTo === null ? '' : $returnTo;
     $this->tempStore->set(AuthController::STATE, $states);
     
     return $nonce;
-  }
-
-  /**
-   * Do our one-time check against the nonce stored in session
-   */
-  protected function compareNonce($nonce, &$returnTo) {
-    $states = $this->tempStore->get(AuthController::STATE);
-    if (!is_array($states)) {
-      $this->logger->error("Couldn't verify state because there was no nonce in storage");
-      return FALSE;
-    }
-
-    if (isset($states[$nonce])) {
-      $returnTo = $states[$nonce];
-      unset($states[$nonce]);
-      $this->tempStore->set(AuthController::STATE, $states);
-      return TRUE;  
-    }
-
-    $this->logger->error("$nonce not found in: ".implode(',', $states));
-    return FALSE;
   }
 
   /**
@@ -228,24 +220,12 @@ class AuthController extends ControllerBase {
   public function callback(Request $request) {
     global $base_root;
 
-    /**
-     * Validate the state if we redirected for login
-     */
-    $state = 'invalid';
-    if ($request->query->has('state')) {
-      $state = $request->query->get('state');
-    } elseif ($request->request->has('state')) {
-      $state = $request->request->get('state');
-    }
-
     $returnTo = null;
-    if (!$this->compareNonce($state, $returnTo)) {
-      return $this->failLogin(t('There was a problem logging you in, sorry for the inconvenience.'),
-        "Failed to verify the state ($state)");
+    $response = $this->checkForError($request, $returnTo);
+    if ($response !== null) {
+      return $response;
     }
 
-    $response = $this->checkForError($request, $returnTo);
-    if ($response !== null) return $response;
 
     $this->auth0 = new Auth0(array(
         'domain'        => $this->domain,
@@ -256,7 +236,7 @@ class AuthController extends ControllerBase {
         'persist_id_token' => FALSE,
         'persist_user' => FALSE,
         'persist_access_token' => FALSE,
-        'persist_refresh_token' => FALSE    
+        'persist_refresh_token' => FALSE
         ));
 
     $userInfo = null;
@@ -287,7 +267,7 @@ class AuthController extends ControllerBase {
     try {
       $user = $this->helper->validateIdToken($idToken);
     }
-    catch(\Exception $e) {
+    catch(CoreException $e) {
       return $this->failLogin(t('There was a problem logging you in, sorry for the inconvenience.'), 
         'Failed to verify and decode the JWT: ' . $e->getMessage());
     }

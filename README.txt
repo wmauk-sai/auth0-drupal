@@ -33,8 +33,8 @@ INSTALLATION FROM GITHUB
 
 AUTH0 CONFIGURATION
 -------------------
-1. Go to your auth0 dashboard https://app.auth0.com/
-2. Create a new PHP application.
+1. Go to your auth0 dashboard https://manage.auth0.com/
+2. Create a new Client.
 3. On App Callbacks URLs add a url like this http://<yoursite>/auth0/callback
 4. Open "API Access" tab.
 5. Keep notice of your domain, client id and client secret (note whether the client secret is base64 encoded or not).  RECOMMENDED: Go to your client's advanced settings and select RS256 and OIDC Conformant under the Oauth tab.  Please note that this requires you set Redirect login for SSO as well.
