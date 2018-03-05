@@ -34,13 +34,12 @@ INSTALLATION FROM GITHUB
 AUTH0 CONFIGURATION
 -------------------
 1. Go to your auth0 dashboard https://manage.auth0.com/
-2. Create a new Client.
-3. In the "Allowed Callback URLs" field, add a URL like http://<yoursite>/auth0/callback
+2. Create a new Client with the type "Regular Web Application"
+3. In the "Allowed Callback URLs" field, add a URL like 'http://yourdomain.com/auth0/callback'
 4. Make a note of your domain, Client ID and Client Secret (also note whether the Client Secret is base64 encoded or
 not).
-5. RECOMMENDED: Go to your client's advanced settings and select RS256 and OIDC Conformant under the Oauth tab.  Please note that this requires you set Redirect login for SSO as well.
-6. If redirecting for SSO, make sure you add `http://<yoursite>` to the allowed logouts in your account settings in Auth0.
-7. If NOT redirecting, make sure you turn on cross-origin in the advanced section of your client on the auth0 dashboard.  Please note that without redirecting, you are restricting your users from disabling third party cookies.  See here, https://auth0.com/docs/cross-origin-authentication, for more information.
+5. If using SSO, make sure to add your site's homepage to the "Allowed Logout URLs" field in your Tenant > Advanced
+settings.
 
 MODULE CONFIGURATION
 --------------------

@@ -9,11 +9,11 @@ Single Sign On for Enterprises + Social Login + User/Passwords. For all your Dru
 
 ### Drupal 8
 
-The `master` branch is developed for Drupal 8.
+Drupal 8 has been supported in the `master` branch since v2.
 
 ### Drupal 7
 
-The `1.x.x` branch is developed for Drupal 7 but not regularly maintained.
+Drupal 7 is supported only on v1. If you want to contribute to the codebase, please push your PRs against the `1.x.x` branch. Note that this branch is not regularly maintained.
 
 ## Scenarios
 
