@@ -33,8 +33,8 @@ INSTALLATION FROM GITHUB
 
 AUTH0 CONFIGURATION
 -------------------
-1. Go to your auth0 dashboard https://manage.auth0.com/
-2. Create a new Client with the type "Regular Web Application"
+1. Go to your Auth0 dashboard https://manage.auth0.com/
+2. Create a new Application with the type "Regular Web Application"
 3. In the "Allowed Callback URLs" field, add a URL like 'http://yourdomain.com/auth0/callback'
 4. Make a note of your domain, Client ID and Client Secret (also note whether the Client Secret is base64 encoded or
 not).
@@ -43,7 +43,7 @@ settings.
 
 MODULE CONFIGURATION
 --------------------
-You can go to the module configuration by this url http://<yoursite>/admin/config/people/auth0 or using the menu under the people configuration tab. You need to at least configure the domain, client id and client secret on the basic tab, using the information of the auth0 dashboard.
+You can go to the module configuration by this url http://<yoursite>/admin/config/people/auth0 or using the menu under the people configuration tab. You need to at least configure the domain, Application ID and Application Secret on the basic tab, using the information of the auth0 dashboard.
 
 The advance tab contains:
 * Form title:
