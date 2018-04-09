@@ -43,7 +43,7 @@ settings.
 
 MODULE CONFIGURATION
 --------------------
-You can go to the module configuration by this url http://<yoursite>/admin/config/people/auth0 or using the menu under the people configuration tab. You need to at least configure the domain, Application ID and Application Secret on the basic tab, using the information of the auth0 dashboard.
+You can go to the module configuration by this url http://<yoursite>/admin/config/people/auth0 or using the menu under the people configuration tab. You need to at least configure the domain, client id and client secret on the basic tab, using the information of the auth0 dashboard.
 
 The advance tab contains:
 * Form title:
