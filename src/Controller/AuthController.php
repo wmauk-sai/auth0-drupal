@@ -560,7 +560,7 @@ class AuthController extends ControllerBase {
 
         $event = new Auth0UserSignupEvent($user, $userInfo);
         $this->eventDispatcher->dispatch(Auth0UserSignupEvent::NAME, $event);
-      }  
+      }
     }
     catch (EmailNotSetException $e) {
       return $this->failLogin($this->t('This account does not have an email associated. Please login with a different provider.'), 'No Email Found');
@@ -695,7 +695,7 @@ class AuthController extends ControllerBase {
 
     $url = Url::fromRoute('auth0.verify_email', [], []);
     $formText = "<form style='display:none' name='auth0VerifyEmail' action=@url method='post'><input type='hidden' value=@token name='idToken'/></form>";
-    $linkText = "<a href='javascript:null' onClick='document.forms[\"auth0VerifyEmail\"].submit();'>here</a>";
+    $linkText = "<a href='javascript:;' onClick='document.forms[\"auth0VerifyEmail\"].submit();'>here</a>";
 
     return $this->failLogin(
       $this->t($formText . "Please verify your email and log in again. Click $linkText to Resend verification email.",
