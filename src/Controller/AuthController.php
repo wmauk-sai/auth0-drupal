@@ -244,12 +244,9 @@ class AuthController extends ControllerBase {
       $lockExtraSettings = "{}";
     }
 
-    $returnTo = NULL;
-    if ($request->request->has('returnTo')) {
-      $returnTo = $request->request->get('returnTo');
-    }
-    elseif ($request->query->has('returnTo')) {
-      $returnTo = $request->query->get('returnTo');
+    $returnTo = $request->request->get('returnTo', NULL);
+    if (!$returnTo) {
+      $returnTo = $request->query->get('returnTo', NULL);
     }
 
     // If supporting SSO, redirect to the hosted login page for authorization.
@@ -410,9 +407,7 @@ class AuthController extends ControllerBase {
     global $base_root;
     $problem_logging_in_msg = $this->t('There was a problem logging you in, sorry for the inconvenience.');
 
-    $returnTo = NULL;
-    $response = $this->checkForError($request, $returnTo);
-
+    $response = $this->checkForError($request, NULL);
     if ($response !== NULL) {
       return $response;
     }
@@ -423,11 +418,6 @@ class AuthController extends ControllerBase {
       'client_id'     => $this->clientId,
       'client_secret' => $this->clientSecret,
       'redirect_uri'  => "$base_root/auth0/callback",
-      'store' => NULL,
-      'persist_id_token' => FALSE,
-      'persist_user' => FALSE,
-      'persist_access_token' => FALSE,
-      'persist_refresh_token' => FALSE,
     ]);
 
     $userInfo = NULL;
@@ -460,6 +450,14 @@ class AuthController extends ControllerBase {
     }
     catch (\Exception $e) {
       return $this->failLogin($problem_logging_in_msg, $this->t('Failed to validate JWT: @exception', ['@exception' => $e->getMessage()]));
+    }
+
+    // State value is validated in $this->auth0->getUser() above.
+    $returnTo = NULL;
+    $validatedState = $request->query->get('state');
+    $currentSession = $this->tempStore->get(AuthController::STATE);
+    if (!empty($currentSession[$validatedState])) {
+      $returnTo = $currentSession[$validatedState];
     }
 
     if ($userInfo) {
@@ -575,7 +573,7 @@ class AuthController extends ControllerBase {
 
     user_login_finalize($user);
 
-    if ($returnTo !== NULL && strlen($returnTo) > 0 && $returnTo[0] === '/') {
+    if ($returnTo) {
       return new RedirectResponse($returnTo);
     }
     elseif ($request->request->has('destination')) {
@@ -622,7 +620,7 @@ class AuthController extends ControllerBase {
    */
   protected function signupUser(array $userInfo, $idToken = '') {
     // If the user doesn't exist we need to either create a new one,
-    // or assign him to an existing one.
+    // or assign them to an existing one.
     $isDatabaseUser = FALSE;
 
     $user_sub_arr = explode('|', $userInfo['user_id']);
