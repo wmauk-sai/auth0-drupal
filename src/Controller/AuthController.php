@@ -251,8 +251,7 @@ class AuthController extends ControllerBase {
 
     // If supporting SSO, redirect to the hosted login page for authorization.
     if ($this->redirectForSso) {
-      $prompt = 'none';
-      return new TrustedRedirectResponse($this->buildAuthorizeUrl($prompt, $returnTo));
+      return new TrustedRedirectResponse($this->buildAuthorizeUrl(NULL, $returnTo));
     }
 
     /* Not doing SSO, so show login page */
@@ -289,18 +288,13 @@ class AuthController extends ControllerBase {
    *   The response after logout.
    */
   public function logout() {
-    global $base_root;
-
-    $auth0Api = new Authentication($this->domain, $this->clientId);
-
     user_logout();
 
-    // If we are using SSO, we need to logout completely from Auth0,
-    // otherwise they will just logout of their client.
-    return new TrustedRedirectResponse($auth0Api->get_logout_link(
-        $base_root,
-        $this->redirectForSso ? NULL : $this->clientId)
-    );
+    // Redirect to Auth0 to log out.
+    $auth0Api = new Authentication($this->domain, $this->clientId);
+    $frontPageUrl = Url::fromRoute('<front>', [], ['absolute' => TRUE]);
+    $logoutUrl = $auth0Api->get_logout_link($frontPageUrl, $this->clientId);
+    return new TrustedRedirectResponse($logoutUrl);
   }
 
   /**
@@ -458,6 +452,7 @@ class AuthController extends ControllerBase {
     $currentSession = $this->tempStore->get(AuthController::STATE);
     if (!empty($currentSession[$validatedState])) {
       $returnTo = $currentSession[$validatedState];
+      unset($currentSession[$validatedState]);
     }
 
     if ($userInfo) {
@@ -1023,6 +1018,7 @@ class AuthController extends ControllerBase {
    * @throws \Auth0\SDK\Exception\CoreException
    *   Exception thrown when validating email.
    */
+  // phpcs:ignore
   public function verify_email(Request $request) {
     $idToken = $request->get('idToken');
 
