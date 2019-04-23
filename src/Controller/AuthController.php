@@ -288,13 +288,16 @@ class AuthController extends ControllerBase {
    *   The response after logout.
    */
   public function logout() {
+    $auth0Api = new Authentication($this->domain, $this->clientId);
+
     user_logout();
 
-    // Redirect to Auth0 to log out.
-    $auth0Api = new Authentication($this->domain, $this->clientId);
-    $frontPageUrl = Url::fromRoute('<front>', [], ['absolute' => TRUE]);
-    $logoutUrl = $auth0Api->get_logout_link($frontPageUrl, $this->clientId);
-    return new TrustedRedirectResponse($logoutUrl);
+    // If we are using SSO, we need to logout completely from Auth0,
+    // otherwise they will just logout of their client.
+    return new TrustedRedirectResponse($auth0Api->get_logout_link(
+      \Drupal::request()->getSchemeAndHttpHost(),
+      $this->redirectForSso ? NULL : $this->clientId
+    ) );
   }
 
   /**
