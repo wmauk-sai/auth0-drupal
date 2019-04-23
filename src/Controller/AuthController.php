@@ -244,10 +244,7 @@ class AuthController extends ControllerBase {
       $lockExtraSettings = "{}";
     }
 
-    $returnTo = $request->request->get('returnTo', NULL);
-    if (!$returnTo) {
-      $returnTo = $request->query->get('returnTo', NULL);
-    }
+    $returnTo = $request->request->get('returnTo', $request->query->get('returnTo', NULL));
 
     // If supporting SSO, redirect to the hosted login page for authorization.
     if ($this->redirectForSso) {
