@@ -415,6 +415,7 @@ class AuthController extends ControllerBase {
       'client_id'     => $this->clientId,
       'client_secret' => $this->clientSecret,
       'redirect_uri'  => "$base_root/auth0/callback",
+      'persist_user' => FALSE,
     ]);
 
     $userInfo = NULL;
