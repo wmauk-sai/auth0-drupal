@@ -89,6 +89,13 @@ class AuthController extends ControllerBase {
   protected $domain;
 
   /**
+   * The Auth0 Custom Domain.
+   *
+   * @var string|null
+   */
+  protected $customDomain;
+
+  /**
    * The Auth0 client id.
    *
    * @var string|null
@@ -200,6 +207,7 @@ class AuthController extends ControllerBase {
     $this->auth0Logger = $logger_factory->get('auth0');
     $this->config = $config_factory->get('auth0.settings');
     $this->domain = $this->config->get(AuthController::AUTH0_DOMAIN);
+    $this->customDomain = $this->config->get(AuthHelper::AUTH0_CUSTOM_DOMAIN);
     $this->clientId = $this->config->get(AuthController::AUTH0_CLIENT_ID);
     $this->clientSecret = $this->config->get(AuthController::AUTH0_CLIENT_SECRET);
     $this->redirectForSso = $this->config->get(AuthController::AUTH0_REDIRECT_FOR_SSO);
@@ -262,9 +270,9 @@ class AuthController extends ControllerBase {
         'drupalSettings' => [
           'auth0' => [
             'clientId' => $this->config->get('auth0_client_id'),
-            'domain' => $this->config->get('auth0_domain'),
+            'domain' => $this->helper->getAuthDomain(),
             'lockExtraSettings' => $lockExtraSettings,
-            'configurationBaseUrl' => 'https://cdn.auth0.com',
+            'configurationBaseUrl' => $this->helper->getTenantCdn($this->config->get('auth0_domain')),
             'showSignup' => $this->config->get('auth0_allow_signup'),
             'callbackURL' => "$base_root/auth0/callback",
             'state' => $this->getNonce($returnTo),
@@ -285,7 +293,7 @@ class AuthController extends ControllerBase {
    *   The response after logout.
    */
   public function logout() {
-    $auth0Api = new Authentication($this->domain, $this->clientId);
+    $auth0Api = new Authentication($this->helper->getAuthDomain(), $this->clientId);
 
     user_logout();
 
@@ -340,7 +348,7 @@ class AuthController extends ControllerBase {
   protected function buildAuthorizeUrl($prompt, $returnTo = NULL) {
     global $base_root;
 
-    $auth0Api = new Authentication($this->domain, $this->clientId);
+    $auth0Api = new Authentication($this->helper->getAuthDomain(), $this->clientId);
 
     $response_type = 'code';
     $redirect_uri = "$base_root/auth0/callback";
@@ -368,18 +376,27 @@ class AuthController extends ControllerBase {
    * @param string $returnTo
    *   The return url.
    *
-   * @return \Drupal\Core\Routing\TrustedRedirectResponse|null
+   * @return \Drupal\Core\Routing\TrustedRedirectResponse|RedirectResponse|null
    *   The redirect response.
    */
   private function checkForError(Request $request, $returnTo) {
-    // Check for errors.
-    // Check in query.
-    if ($request->query->has('error') && $request->query->get('error') == 'login_required') {
+    $error_msg = $this->t('There was a problem logging you in');
+
+    // Check for in URL parameters and REQUEST.
+    $error_code = $request->query->get('error', $request->request->get('error'));
+
+    // Errors codes that should be redirected back to Auth0 for authentication.
+    $redirect_errors = [
+      'login_required',
+      'interaction_required',
+      'consent_required',
+    ];
+    if ($error_code && in_array($error_code, $redirect_errors)) {
       return new TrustedRedirectResponse($this->buildAuthorizeUrl(FALSE, $returnTo));
     }
-    // Check in post.
-    if ($request->request->has('error') && $request->request->get('error') == 'login_required') {
-      return new TrustedRedirectResponse($this->buildAuthorizeUrl(FALSE, $returnTo));
+    elseif ($error_code) {
+      $error_desc = $request->query->get('error_description', $request->request->get('error_description', $error_code));
+      return $this->failLogin($error_msg . ':  ' . $error_desc, $error_desc);
     }
 
     return NULL;
@@ -408,7 +425,7 @@ class AuthController extends ControllerBase {
 
     // Set store to null so that the store is set to SessionStore.
     $this->auth0 = new Auth0([
-      'domain'        => $this->domain,
+      'domain'        => $this->helper->getAuthDomain(),
       'client_id'     => $this->clientId,
       'client_secret' => $this->clientSecret,
       'redirect_uri'  => "$base_root/auth0/callback",
