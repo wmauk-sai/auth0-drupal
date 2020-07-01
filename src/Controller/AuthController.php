@@ -1029,6 +1029,8 @@ class AuthController extends ControllerBase {
    *
    * @throws \Auth0\SDK\Exception\CoreException
    *   Exception thrown when validating email.
+   * 
+   * @deprecated v8.x-2.4 - the legacy send_verification_email endpoint itself is being deprecated and should no longer be called.
    */
   // phpcs:ignore
   public function verify_email(Request $request) {
