@@ -705,17 +705,8 @@ class AuthController extends ControllerBase {
    *   The redirect response.
    */
   protected function auth0FailWithVerifyEmail($idToken) {
-
-    $messageHtml = sprintf('
-      <p>%s.</p>
-      <form name="auth0VerifyEmail" action="%s">
-        <input type="hidden" value="%s" name="idToken" />
-        <input type="submit" value="%s" class="button" />
-      </form>',
-      $this->t('Please verify your email and log in again'),
-      Url::fromRoute('auth0.verify_email', [], [])->toString(),
-      $idToken,
-      $this->t('Resend verification')
+    $messageHtml = sprintf('<p>%s.</p>',
+      $this->t('Please verify your email and log in again')
     );
 
     return $this->failLogin(Markup::create($messageHtml), 'Email not verified');
