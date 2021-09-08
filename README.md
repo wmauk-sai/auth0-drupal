@@ -1,6 +1,11 @@
 Drupal 8 Module for Auth0
 ====
 
+## NOTICE
+
+The Auth0 Community is in the process of deprecating this library, and the repository will no longer be available on Github after the end-of-life date of **March 8, 2022**. Please make plans to find a suitable replacement or remove this library from any active projects before the end-of-life date. Please reach out in the supporting [Auth0 Community topic](https://community.auth0.com/t/community-repo-deprecation-auth0-drupal/69328) if you have any questions or concerns.
+
+
 This plugin replaces standard Drupal 8 login forms with one powered by Auth0 that enables social, passwordless, and enterprise connection login as well as additional security, multifactor auth, and user statistics.
 
 Drupal 7 is supported only on v1. If you want to contribute to the codebase, please push your PRs against the `1.x.x` branch. Note that this branch is not regularly maintained.
